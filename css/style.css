@@ -730,3 +730,39 @@ html[data-tema="oscuro"] .btn-secondary { color: var(--ink); }
   .ui-controles .boton-menu { display: none; }
   html.menu-compacto { --sidebar-w: 240px; }
 }
+
+/* ============================================================
+   AJUSTES DE ESPACIO: menú sin desborde y hero bien distribuido
+   ============================================================ */
+.site-header {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.site-header .container.nav,
+.site-header .container.nav > * {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.site-header .container.nav { padding-left: 16px; padding-right: 16px; }
+.site-header .brand-tag { white-space: normal; line-height: 1.4; display: block; }
+.site-header .ui-toggle { width: 100%; white-space: nowrap; overflow: hidden; }
+html.menu-compacto .site-header .container.nav > * { padding-left: 0; padding-right: 0; }
+
+/* Hero: dos columnas de verdad, sin huecos */
+.container.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 56px;
+}
+.container.hero > .hero-copy { grid-column: 1; grid-row: 1; }
+.container.hero > .hero-visual { grid-column: 2; grid-row: 1; }
+
+@media (max-width: 860px) {
+  .container.hero { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .container.hero > .hero-copy,
+  .container.hero > .hero-visual { grid-column: 1; grid-row: auto; }
+}
