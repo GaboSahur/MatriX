@@ -464,7 +464,6 @@ table.ranking tr:last-child td { border-bottom: none; }
   background: var(--bg);
 }
 .chat-form input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
-
 .cloud-msg {
   text-align: center;
   font-family: var(--font-mono);
