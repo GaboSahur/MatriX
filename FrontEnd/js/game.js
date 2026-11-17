@@ -158,6 +158,7 @@ function generarProblema() {
   document.getElementById(
     "expresion"
   ).textContent = `${a} ${CONTENT_LIBRARY[operacion].simbolo} ${b}`;
+  if (vozActivada) leerEnVoz(`${a} ${CONTENT_LIBRARY[operacion].simbolo} ${b}`);
 
   const input = document.getElementById("input-respuesta");
   input.value = "";
@@ -234,6 +235,8 @@ function finalizarPartida() {
   document.getElementById("resultado-correctas").textContent = estado.correctas;
   document.getElementById("resultado-incorrectas").textContent = estado.incorrectas;
 
+  mostrarDatoCurioso(estado.puntaje || estado.correctas);
+
   document.dispatchEvent(
     new CustomEvent("numerax:partida-finalizada", {
       detail: { puntaje: estado.puntaje, nivel: CONTENT_LIBRARY[estado.nivelKey].titulo },
@@ -259,3 +262,69 @@ function generarEjercicioPorTema(tema) {
   }
 }
 
+
+/* ============================================================
+   INTEGRACIONES: voz (Web Speech API) y dato curioso (Numbers API)
+   ============================================================ */
+let vozActivada = false;
+
+const SIMBOLOS_VOZ = { "+": "más", "−": "menos", "-": "menos", "×": "por", "÷": "dividido" };
+
+function leerEnVoz(texto) {
+  if (!("speechSynthesis" in window)) return;
+  const frase = texto.replace(/[+\-−×÷]/g, (simbolo) => ` ${SIMBOLOS_VOZ[simbolo] || simbolo} `);
+  speechSynthesis.cancel();
+  const voz = new SpeechSynthesisUtterance(frase);
+  voz.lang = "es-ES";
+  voz.rate = 0.9;
+  speechSynthesis.speak(voz);
+}
+
+function crearBotonVoz() {
+  if (!("speechSynthesis" in window)) return;
+  const barra = document.querySelector(".game-topbar");
+  if (!barra) return;
+
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "pill";
+  boton.setAttribute("aria-pressed", "false");
+  boton.textContent = "🔇 Voz";
+  boton.addEventListener("click", () => {
+    vozActivada = !vozActivada;
+    boton.textContent = vozActivada ? "🔊 Voz" : "🔇 Voz";
+    boton.setAttribute("aria-pressed", String(vozActivada));
+    if (!vozActivada) speechSynthesis.cancel();
+  });
+  barra.append(boton);
+}
+
+async function mostrarDatoCurioso(numero) {
+  const contenedor = document.getElementById("pantalla-resultado");
+  if (!contenedor) return;
+
+  let dato = contenedor.querySelector(".dato-curioso");
+  if (!dato) {
+    dato = document.createElement("p");
+    dato.className = "dato-curioso";
+    dato.style.cssText = "font-style: italic; max-width: 520px; margin: 16px auto;";
+    contenedor.querySelector(".hero-actions")?.before(dato);
+  }
+  dato.textContent = "Buscando un dato curioso...";
+
+  try {
+    const controlador = new AbortController();
+    const limite = setTimeout(() => controlador.abort(), 5000);
+    const respuesta = await fetch(`https://numbersapi.com/${numero}/trivia`, {
+      signal: controlador.signal,
+    });
+    clearTimeout(limite);
+    if (!respuesta.ok) throw new Error("Numbers API respondió con error");
+    dato.textContent = `Sabías que… ${await respuesta.text()}`;
+  } catch (error) {
+    console.warn("No se pudo cargar el dato curioso:", error);
+    dato.textContent = "";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", crearBotonVoz);
