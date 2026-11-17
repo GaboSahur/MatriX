@@ -516,3 +516,133 @@ table.ranking tr:last-child td { border-bottom: none; }
   html { scroll-behavior: auto; }
   .btn { transition: none; }
 }
+
+/* ============================================================
+   LAYOUT: menú lateral fijo a la izquierda + contenido con margen
+   ============================================================ */
+html, body { overflow-x: hidden; }
+
+body { display: block; }
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 50;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  border-bottom: none;
+}
+
+.site-header .container.nav {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 28px;
+  max-width: none;
+  height: 100%;
+  padding: 28px 16px;
+}
+
+.site-header .brand { flex-direction: column; gap: 4px; padding: 0 8px; }
+
+.nav-toggle { display: none !important; }
+
+.nav-links {
+  flex-direction: column;
+  gap: 4px;
+  position: static;
+  display: flex !important;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.nav-links a {
+  display: block;
+  padding: 10px 14px;
+  width: 100%;
+}
+
+.site-header .nav-account {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: auto;
+}
+
+main,
+.site-footer {
+  margin-left: 240px;
+  min-width: 0;
+}
+
+.site-footer .container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.container {
+  max-width: 1080px;
+  padding: 0 40px;
+}
+
+section { padding: 40px 0; }
+
+img, table, pre, .game-shell, .form-card, .card, .level-card {
+  max-width: 100%;
+}
+
+table.ranking { display: block; overflow-x: auto; }
+
+/* Celular / pantallas chicas: menú arriba, contenido a todo el ancho */
+@media (max-width: 860px) {
+  .site-header {
+    position: sticky;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .site-header .container.nav {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+    padding: 14px 20px;
+    gap: 12px;
+  }
+
+  .site-header .brand { flex-direction: row; align-items: baseline; padding: 0; }
+
+  .nav-toggle { display: inline-flex !important; align-items: center; gap: 6px; }
+
+  .nav-links {
+    display: none !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px 16px;
+  }
+
+  .nav-links.open,
+  .nav-links.abierto { display: flex !important; }
+
+  .site-header .nav-account { margin-top: 0; }
+
+  main,
+  .site-footer { margin-left: 0; }
+
+  .container { padding: 0 20px; }
+}
