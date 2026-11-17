@@ -529,7 +529,7 @@ body { display: block; }
   top: 0;
   left: 0;
   bottom: 0;
-  width: 240px;
+  width: var(--sidebar-w);
   height: 100vh;
   overflow-y: auto;
   z-index: 50;
@@ -577,7 +577,7 @@ body { display: block; }
 
 main,
 .site-footer {
-  margin-left: 240px;
+  margin-left: var(--sidebar-w);
   min-width: 0;
 }
 
@@ -657,4 +657,76 @@ table.ranking { display: block; overflow-x: auto; }
 
 @media (max-width: 860px) {
   .container.hero { padding: 32px 20px 40px; }
+}
+
+/* ============================================================
+   PREFERENCIAS DE INTERFAZ: ancho del menú y modo oscuro
+   ============================================================ */
+:root { --sidebar-w: 240px; }
+html.menu-compacto { --sidebar-w: 84px; }
+
+html.menu-compacto .site-header .container.nav { padding: 28px 12px; }
+html.menu-compacto .brand-tag,
+html.menu-compacto .nav-account { display: none; }
+html.menu-compacto .brand-name { font-size: 1rem; }
+html.menu-compacto .nav-links a {
+  font-size: 0;
+  padding: 10px 0;
+  text-align: center;
+}
+html.menu-compacto .nav-links a::before {
+  content: attr(data-corto);
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ui-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.ui-toggle:hover { border-color: var(--ink-faint); color: var(--ink); }
+html.menu-compacto .ui-toggle .texto { display: none; }
+
+.ui-controles { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+
+/* Modo oscuro: mismos tokens, otros valores */
+html[data-tema="oscuro"] {
+  color-scheme: dark;
+  --bg: #0f1218;
+  --surface: #171b24;
+  --border: #2a3040;
+  --ink: #eef1f7;
+  --ink-soft: #aab2c0;
+  --ink-faint: #7a8394;
+  --accent: #7d93f0;
+  --accent-dark: #9db0ff;
+  --accent-soft: #1f2740;
+  --success: #3ccf96;
+  --success-soft: #163b2e;
+  --danger: #ff7a7a;
+  --danger-soft: #3d2224;
+  --gold: #e6a93a;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+html[data-tema="oscuro"] .btn-primary { color: #0f1218; }
+html[data-tema="oscuro"] .btn-primary:hover { color: #0f1218; }
+html[data-tema="oscuro"] .btn-ghost,
+html[data-tema="oscuro"] .btn-secondary { color: var(--ink); }
+
+/* En celular no hace falta el botón de ancho */
+@media (max-width: 860px) {
+  .ui-controles .boton-menu { display: none; }
+  html.menu-compacto { --sidebar-w: 240px; }
 }
