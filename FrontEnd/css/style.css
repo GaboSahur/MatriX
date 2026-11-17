@@ -351,6 +351,8 @@ section { padding: 52px 0; }
 
 .result-screen { text-align: center; }
 .result-screen .score-big { font-family: var(--font-mono); font-size: 3rem; color: var(--ink); font-weight: 600; }
+
+/* ---------------- FORMULARIOS (contacto / admin) ---------------- */
 .form-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -427,6 +429,8 @@ table.ranking tr:last-child td { border-bottom: none; }
 .password-meter[data-fuerza="2"] span:nth-child(-n+2) { background: var(--gold); }
 .password-meter[data-fuerza="3"] span:nth-child(-n+3) { background: var(--success); }
 .password-hint { font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
+
+/* ---------------- CHAT CON IA ---------------- */
 .chat-shell {
   max-width: 680px;
   margin: 0 auto;
@@ -460,6 +464,7 @@ table.ranking tr:last-child td { border-bottom: none; }
   background: var(--bg);
 }
 .chat-form input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+
 .cloud-msg {
   text-align: center;
   font-family: var(--font-mono);
