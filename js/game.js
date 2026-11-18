@@ -53,9 +53,25 @@ let estado = {
   jugando: false,
 };
 
+let vozActivada = false;
+
+const SIMBOLOS_VOZ = { "+": "más", "−": "menos", "-": "menos", "×": "por", "÷": "dividido" };
+
+const DATOS_CURIOSOS = [
+  "el cero empezó a usarse como número en la India, alrededor del siglo V.",
+  "el 2 es el único número primo par: todos los demás pares son divisibles por 2.",
+  "multiplicar cualquier número por 10 le agrega un cero al final: 36 × 10 = 360.",
+  "el signo = fue propuesto por el matemático Robert Recorde en 1557.",
+  "para dividir por 5 también podés multiplicar por 2 y dividir por 10.",
+  "una circunferencia tiene 360 grados, un número con muchos divisores.",
+  "los hexágonos del panal de abejas son la forma que mejor aprovecha el espacio.",
+  "un número es primo si solo es divisible por 1 y por sí mismo.",
+];
+
 document.addEventListener("DOMContentLoaded", () => {
   if (!document.querySelector(".game-shell")) return;
   inicializarJuego();
+  crearBotonVoz();
 });
 
 function inicializarJuego() {
@@ -156,10 +172,9 @@ function generarProblema() {
     resultado,
   };
 
-  document.getElementById(
-    "expresion"
-  ).textContent = `${a} ${CONTENT_LIBRARY[operacion].simbolo} ${b}`;
-  if (vozActivada) leerEnVoz(`${a} ${CONTENT_LIBRARY[operacion].simbolo} ${b}`);
+  const expresion = `${a} ${CONTENT_LIBRARY[operacion].simbolo} ${b}`;
+  document.getElementById("expresion").textContent = expresion;
+  if (vozActivada) leerEnVoz(expresion);
 
   const input = document.getElementById("input-respuesta");
   input.value = "";
@@ -236,6 +251,22 @@ function finalizarPartida() {
   document.getElementById("resultado-correctas").textContent = estado.correctas;
   document.getElementById("resultado-incorrectas").textContent = estado.incorrectas;
 
+  guardarPartida({
+    nivel: estado.nivelKey,
+    puntaje: estado.puntaje,
+    correctas: estado.correctas,
+    incorrectas: estado.incorrectas,
+  });
+
+  mostrarDatoCurioso(estado.puntaje || estado.correctas);
+
+  document.dispatchEvent(
+    new CustomEvent("numerax:partida-finalizada", {
+      detail: { puntaje: estado.puntaje, nivel: CONTENT_LIBRARY[estado.nivelKey].titulo },
+    })
+  );
+}
+
 async function guardarPartida(datos) {
   try {
     const token = obtenerToken();
@@ -250,14 +281,6 @@ async function guardarPartida(datos) {
   } catch (error) {
     console.warn("No se pudo guardar la partida:", error);
   }
-}
-  mostrarDatoCurioso(estado.puntaje || estado.correctas);
-
-  document.dispatchEvent(
-    new CustomEvent("numerax:partida-finalizada", {
-      detail: { puntaje: estado.puntaje, nivel: CONTENT_LIBRARY[estado.nivelKey].titulo },
-    })
-  );
 }
 
 function aleatorioEntre(min, max) {
@@ -277,14 +300,6 @@ function generarEjercicioPorTema(tema) {
       return null;
   }
 }
-
-
-/* ============================================================
-   INTEGRACIONES: voz (Web Speech API) y dato curioso (local)
-   ============================================================ */
-let vozActivada = false;
-
-const SIMBOLOS_VOZ = { "+": "más", "−": "menos", "-": "menos", "×": "por", "÷": "dividido" };
 
 function leerEnVoz(texto) {
   if (!("speechSynthesis" in window)) return;
@@ -315,17 +330,6 @@ function crearBotonVoz() {
   barra.append(boton);
 }
 
-const DATOS_CURIOSOS = [
-  "el cero empezó a usarse como número en la India, alrededor del siglo V.",
-  "el 2 es el único número primo par: todos los demás pares son divisibles por 2.",
-  "multiplicar cualquier número por 10 le agrega un cero al final: 36 × 10 = 360.",
-  "el signo = fue propuesto por el matemático Robert Recorde en 1557.",
-  "para dividir por 5 también podés multiplicar por 2 y dividir por 10.",
-  "una circunferencia tiene 360 grados, un número con muchos divisores.",
-  "los hexágonos del panal de abejas son la forma que mejor aprovecha el espacio.",
-  "un número es primo si solo es divisible por 1 y por sí mismo.",
-];
-
 function mostrarDatoCurioso(numero) {
   const contenedor = document.getElementById("pantalla-resultado");
   if (!contenedor) return;
@@ -341,21 +345,4 @@ function mostrarDatoCurioso(numero) {
   // Dato local (sin red): el mismo puntaje siempre muestra el mismo dato
   const indice = Math.abs(Number(numero) || 0) % DATOS_CURIOSOS.length;
   dato.textContent = `Sabías que… ${DATOS_CURIOSOS[indice]}`;
-}
-
-document.addEventListener("DOMContentLoaded", crearBotonVoz);
-async function guardarPartida(datos) {
-  try {
-    const token = obtenerToken();
-    await fetch(`${API_URL}/api/partidas`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(datos),
-    });
-  } catch (error) {
-    console.warn("No se pudo guardar la partida:", error);
-  }
 }
