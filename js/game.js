@@ -5,7 +5,7 @@
  * -----------------------------------------------------------
  */
 
-const URL_API = "http://localhost:3000";
+const URL_API = "https://matrix-fvd7.onrender.com";
 import { CONTENT_LIBRARY } from "./content-library.js";
 import { generarEjercicioFracciones } from "./generadores/fracciones.js";
 import { generarEjercicioDecimales } from "./generadores/decimales.js";
