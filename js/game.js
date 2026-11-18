@@ -5,6 +5,7 @@
  * -----------------------------------------------------------
  */
 
+const URL_API = "http://localhost:3000";
 import { CONTENT_LIBRARY } from "./content-library.js";
 import { generarEjercicioFracciones } from "./generadores/fracciones.js";
 import { generarEjercicioDecimales } from "./generadores/decimales.js";
@@ -235,6 +236,13 @@ function finalizarPartida() {
   document.getElementById("resultado-correctas").textContent = estado.correctas;
   document.getElementById("resultado-incorrectas").textContent = estado.incorrectas;
 
+  guardarPartida({
+  nivel: estado.nivelKey,
+  puntaje: estado.puntaje,
+  correctas: estado.correctas,
+  incorrectas: estado.incorrectas,
+  });
+
   mostrarDatoCurioso(estado.puntaje || estado.correctas);
 
   document.dispatchEvent(
@@ -328,3 +336,14 @@ function mostrarDatoCurioso(numero) {
 }
 
 document.addEventListener("DOMContentLoaded", crearBotonVoz);
+async function guardarPartida(datos) {
+  try {
+    await fetch(`${URL_API}/api/partidas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(datos),
+    });
+  } catch (error) {
+    console.warn("No se pudo guardar la partida:", error);
+  }
+}
