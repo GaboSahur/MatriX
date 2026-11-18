@@ -430,6 +430,7 @@ table.ranking tr:last-child td { border-bottom: none; }
 .password-meter[data-fuerza="3"] span:nth-child(-n+3) { background: var(--success); }
 .password-hint { font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
 
+<<<<<<< HEAD
 /* ---------------- CHAT CON IA ---------------- */
 .chat-shell {
   max-width: 680px;
@@ -464,6 +465,9 @@ table.ranking tr:last-child td { border-bottom: none; }
   background: var(--bg);
 }
 .chat-form input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+
+=======
+>>>>>>> a0f6361f605dd6c590c5ee90d990654491e075a9
 .cloud-msg {
   text-align: center;
   font-family: var(--font-mono);
@@ -808,3 +812,7 @@ html.menu-compacto .site-header .container.nav > * { padding-left: 0; padding-ri
 @media (max-width: 860px) {
   .cuenta-barra { top: auto; bottom: 16px; right: 16px; }
 }
+
+/* Respetar el atributo hidden en las tablas (la regla de tabla lo anulaba) */
+table[hidden], .hidden { display: none !important; }
+table.ranking { width: 100%; }
