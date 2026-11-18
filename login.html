@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ingreso admin</title>
+  <title>Ranking · NumeraX</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body data-page="login" data-title-suffix="Ingreso admin">
+<body data-page="ranking" data-title-suffix="Ranking">
+
   <header class="site-header">
     <div class="container nav">
       <a href="index.html" class="brand">
@@ -25,35 +26,37 @@
       </ul>
     </div>
   </header>
+
   <main>
     <section>
       <div class="container">
-        <div class="section-head" style="margin: 0 auto 28px; text-align:center; max-width: 480px;">
-          <span class="eyebrow">Panel privado</span>
-          <h2>Ingreso de administrador</h2>
-          <p>Acceso exclusivo para gestionar el ranking y los mensajes de contacto.</p>
+        <div class="section-head" style="margin: 0 auto 28px; text-align:center;">
+          <span class="eyebrow">Ranking global</span>
+          <h2>¿Quién va ganando?</h2>
+          <p>Mejor puntaje de cada jugador, hasta 50 jugadores.</p>
         </div>
 
-        <div class="form-card">
-          <div class="alert alert-error" id="login-error" role="alert"></div>
+        <div class="tabs" role="tablist" aria-label="Período del ranking" style="justify-content:center;">
+          <button class="tab-btn active" data-periodo="diario" role="tab" aria-selected="true" type="button">Diario</button>
+          <button class="tab-btn" data-periodo="semanal" role="tab" aria-selected="false" type="button">Semanal</button>
+          <button class="tab-btn" data-periodo="mensual" role="tab" aria-selected="false" type="button">Mensual</button>
+          <button class="tab-btn" data-periodo="historico" role="tab" aria-selected="false" type="button">Histórico</button>
+        </div>
 
-          <form id="form-login" novalidate>
-            <div class="field">
-              <label for="usuario">Usuario</label>
-              <input type="text" id="usuario" name="usuario" autocomplete="username" required />
-            </div>
-            <div class="field">
-              <label for="clave">Contraseña</label>
-              <input type="password" id="clave" name="clave" autocomplete="current-password" required />
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
-          </form>
-
-          <p style="margin-top:18px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft);">
-            Demo: usuario <strong>admin</strong> · contraseña <strong>matematica2026</strong>
-            (definidos en <code>js/config.js</code>).
-            (definidos en <code>assets/js/config.js</code>).
-          </p>
+        <div style="max-width: 720px; margin: 0 auto;">
+          <table class="ranking" id="tabla-ranking" hidden>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jugador</th>
+                <th>Nivel</th>
+                <th>Puntaje</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+          <p class="empty-state" id="ranking-estado">Cargando ranking...</p>
         </div>
       </div>
     </section>
@@ -68,6 +71,84 @@
 
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
-  <script src="js/auth.js"></script>
+  <script type="module">
+    import { API_URL } from "./js/sesion.js";
+    const URL_API = API_URL;
+
+    const NIVELES = {
+      suma: "Sumas",
+      resta: "Restas",
+      multiplicacion: "Multiplicación",
+      division: "División",
+      mixto: "Desafío mixto",
+      fracciones: "Fracciones",
+      decimales: "Decimales",
+      porcentajes: "Porcentajes",
+    };
+
+    const estado = document.getElementById("ranking-estado");
+    const tabla = document.getElementById("tabla-ranking");
+    const cuerpo = document.getElementById("ranking-body");
+
+    function mostrarMensaje(texto) {
+      estado.textContent = texto;
+      estado.classList.remove("hidden");
+      tabla.hidden = true;
+    }
+
+    function fechaCorta(iso) {
+      if (!iso) return "";
+      return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    async function cargarRanking(periodo = "diario") {
+      mostrarMensaje("Cargando ranking...");
+      try {
+        const respuesta = await fetch(`${URL_API}/api/ranking?periodo=${periodo}`);
+        if (!respuesta.ok) throw new Error(`Estado ${respuesta.status}`);
+        const partidas = await respuesta.json();
+
+        if (partidas.length === 0) {
+          mostrarMensaje("Todavía no hay partidas registradas.");
+          return;
+        }
+
+        cuerpo.innerHTML = "";
+        partidas.forEach((p, i) => {
+          const fila = document.createElement("tr");
+          [
+            i + 1,
+            p.nombre || "Anónimo",
+            NIVELES[p.nivel] || p.nivel,
+            p.puntaje,
+            fechaCorta(p.fecha),
+          ].forEach((valor) => {
+            const celda = document.createElement("td");
+            celda.textContent = valor;
+            fila.append(celda);
+          });
+          cuerpo.append(fila);
+        });
+
+        estado.classList.add("hidden");
+        tabla.hidden = false;
+      } catch (error) {
+        console.warn("No se pudo cargar el ranking:", error);
+        mostrarMensaje("No se pudo cargar el ranking. El servidor puede estar despertando; probá de nuevo en un momento.");
+      }
+    }
+
+    document.querySelectorAll(".tab-btn").forEach((boton) => {
+      boton.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => {
+          b.classList.toggle("active", b === boton);
+          b.setAttribute("aria-selected", String(b === boton));
+        });
+        cargarRanking(boton.dataset.periodo);
+      });
+    });
+
+    cargarRanking("diario");
+  </script>
 </body>
 </html>
