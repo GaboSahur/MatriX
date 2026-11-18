@@ -346,9 +346,13 @@ function mostrarDatoCurioso(numero) {
 document.addEventListener("DOMContentLoaded", crearBotonVoz);
 async function guardarPartida(datos) {
   try {
-    await fetch(`${URL_API}/api/partidas`, {
+    const token = obtenerToken();
+    await fetch(`${API_URL}/api/partidas`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(datos),
     });
   } catch (error) {
