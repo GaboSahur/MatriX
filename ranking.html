@@ -44,7 +44,7 @@
         </div>
 
         <div style="max-width: 720px; margin: 0 auto;">
-          <table class="ranking" id="tabla-ranking" hidden>
+          <table class="ranking" id="tabla-ranking" style="display:none;">
             <thead>
               <tr>
                 <th>#</th>
@@ -72,7 +72,8 @@
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
   <script type="module">
-    const URL_API = "https://matrix-fvd7.onrender.com";
+    import { API_URL } from "./js/sesion.js";
+    const URL_API = API_URL;
 
     const NIVELES = {
       suma: "Sumas",
@@ -92,7 +93,7 @@
     function mostrarMensaje(texto) {
       estado.textContent = texto;
       estado.classList.remove("hidden");
-      tabla.hidden = true;
+      tabla.style.display = "none";
     }
 
     function fechaCorta(iso) {
@@ -130,7 +131,7 @@
         });
 
         estado.classList.add("hidden");
-        tabla.hidden = false;
+        tabla.style.display = "table";
       } catch (error) {
         console.warn("No se pudo cargar el ranking:", error);
         mostrarMensaje("No se pudo cargar el ranking. El servidor puede estar despertando; probá de nuevo en un momento.");
