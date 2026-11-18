@@ -1,17 +1,114 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import crypto from "node:crypto";
 import { MongoClient } from "mongodb";
 
 const app = express();
-app.use(cors({ origin: "https://gabosahur.github.io" }));
+const ORIGEN_WEB = "https://gabosahur.github.io";
+app.use(cors({ origin: [ORIGEN_WEB, "http://127.0.0.1:5500", "http://localhost:5500"] }));
 app.use(express.json());
 
 const cliente = new MongoClient(process.env.MONGO_URI);
 await cliente.connect();
 const db = cliente.db("numerax");
 
+await db.collection("usuarios").createIndex({ usuario: 1 }, { unique: true });
+await db.collection("sesiones").createIndex({ token: 1 }, { unique: true });
+
+// ---------- Utilidades de contraseña y sesión (sin dependencias extra) ----------
+function hashClave(clave) {
+  const sal = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(clave, sal, 64).toString("hex");
+  return `${sal}:${hash}`;
+}
+
+function claveCorrecta(clave, guardada) {
+  const [sal, hash] = guardada.split(":");
+  const comparar = crypto.scryptSync(clave, sal, 64);
+  return crypto.timingSafeEqual(comparar, Buffer.from(hash, "hex"));
+}
+
+async function crearSesion(usuario, rol = "jugador") {
+  const token = crypto.randomBytes(32).toString("hex");
+  await db.collection("sesiones").insertOne({ token, usuario, rol, creada: new Date() });
+  return token;
+}
+
+async function sesionDesdeRequest(req) {
+  const cabecera = req.headers.authorization || "";
+  const token = cabecera.startsWith("Bearer ") ? cabecera.slice(7) : null;
+  if (!token) return null;
+  return db.collection("sesiones").findOne({ token });
+}
+
+// ---------- Ruta de prueba ----------
 app.get("/", (req, res) => res.send("API de NumeraX funcionando"));
+
+// ---------- Registro e ingreso de jugadores ----------
+app.post("/api/registro", async (req, res) => {
+  const usuario = String(req.body.usuario || "").trim();
+  const clave = String(req.body.clave || "");
+
+  if (!/^[a-zA-Z0-9_]{3,20}$/.test(usuario))
+    return res.status(400).json({ error: "El usuario debe tener entre 3 y 20 letras, números o guiones bajos." });
+  if (clave.length < 6)
+    return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres." });
+
+  try {
+    await db.collection("usuarios").insertOne({ usuario, clave: hashClave(clave), creado: new Date() });
+    const token = await crearSesion(usuario);
+    res.status(201).json({ token, usuario });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ error: "Ese nombre de usuario ya existe." });
+    throw error;
+  }
+});
+
+app.post("/api/ingresar", async (req, res) => {
+  const usuario = String(req.body.usuario || "").trim();
+  const clave = String(req.body.clave || "");
+
+  const cuenta = await db.collection("usuarios").findOne({ usuario });
+  if (!cuenta || !claveCorrecta(clave, cuenta.clave))
+    return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
+
+  const token = await crearSesion(usuario);
+  res.json({ token, usuario });
+});
+
+app.post("/api/salir", async (req, res) => {
+  const cabecera = req.headers.authorization || "";
+  const token = cabecera.startsWith("Bearer ") ? cabecera.slice(7) : "";
+  await db.collection("sesiones").deleteOne({ token });
+  res.json({ ok: true });
+});
+
+app.get("/api/yo", async (req, res) => {
+  const sesion = await sesionDesdeRequest(req);
+  if (!sesion) return res.status(401).json({ error: "No hay sesión." });
+  res.json({ usuario: sesion.usuario, rol: sesion.rol });
+});
+
+// ---------- Partidas y ranking ----------
+app.post("/api/partidas", async (req, res) => {
+  const { nivel, puntaje, correctas, incorrectas } = req.body;
+  if (typeof puntaje !== "number") return res.status(400).json({ error: "Puntaje inválido" });
+
+  const sesion = await sesionDesdeRequest(req);
+  const usuario = sesion && sesion.rol === "jugador" ? sesion.usuario : null;
+
+  await db.collection("partidas").insertOne({
+    usuario,
+    nombre: usuario || "Anónimo",
+    nivel,
+    puntaje,
+    correctas,
+    incorrectas,
+    fecha: new Date(),
+  });
+  res.status(201).json({ ok: true, guardadaComo: usuario || "Anónimo" });
+});
 
 // Inicio del período según la hora de Uruguay (UTC-3)
 function inicioPeriodo(periodo) {
@@ -21,23 +118,23 @@ function inicioPeriodo(periodo) {
   }).formatToParts(new Date());
   const get = (t) => Number(partes.find((p) => p.type === t).value);
   const y = get("year"), m = get("month"), d = get("day");
-
   const medianocheUY = Date.UTC(y, m - 1, d) + 3 * 60 * 60 * 1000;
 
   if (periodo === "diario") return new Date(medianocheUY);
   if (periodo === "semanal") {
-    const diaSemana = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // lunes = 0
+    const diaSemana = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
     return new Date(medianocheUY - diaSemana * 24 * 60 * 60 * 1000);
   }
   if (periodo === "mensual") return new Date(Date.UTC(y, m - 1, 1) + 3 * 60 * 60 * 1000);
-  return null; // histórico
+  return null;
 }
 
-// Ranking: mejor puntaje de cada jugador, hasta 50, por período
+// Ranking: mejor puntaje de cada jugador registrado, hasta 50
 app.get("/api/ranking", async (req, res) => {
   const periodo = String(req.query.periodo || "historico");
   const inicio = inicioPeriodo(periodo);
-  const filtro = inicio ? { fecha: { $gte: inicio } } : {};
+  const filtro = { usuario: { $ne: null } };
+  if (inicio) filtro.fecha = { $gte: inicio };
 
   const top = await db
     .collection("partidas")
@@ -46,8 +143,8 @@ app.get("/api/ranking", async (req, res) => {
       { $sort: { puntaje: -1 } },
       {
         $group: {
-          _id: "$nombre",
-          nombre: { $first: "$nombre" },
+          _id: "$usuario",
+          nombre: { $first: "$usuario" },
           nivel: { $first: "$nivel" },
           puntaje: { $first: "$puntaje" },
           correctas: { $first: "$correctas" },
@@ -64,25 +161,38 @@ app.get("/api/ranking", async (req, res) => {
   res.json(top);
 });
 
-app.post("/api/partidas", async (req, res) => {
-  const { nombre, nivel, puntaje, correctas, incorrectas } = req.body;
-  if (typeof puntaje !== "number") return res.status(400).json({ error: "Puntaje inválido" });
-
-  await db.collection("partidas").insertOne({
-    nombre: String(nombre || "Anónimo").slice(0, 30),
-    nivel,
-    puntaje,
-    correctas,
-    incorrectas,
-    fecha: new Date(),
-  });
-  res.status(201).json({ ok: true });
-});
-
+// ---------- Contacto ----------
 app.post("/api/contacto", async (req, res) => {
   const { nombre, email, mensaje } = req.body;
   await db.collection("mensajes").insertOne({ nombre, email, mensaje, fecha: new Date() });
   res.status(201).json({ ok: true });
+});
+
+// ---------- Administración (protegida) ----------
+app.post("/api/admin/ingresar", async (req, res) => {
+  const usuario = String(req.body.usuario || "");
+  const clave = String(req.body.clave || "");
+  if (usuario !== process.env.ADMIN_USUARIO || clave !== process.env.ADMIN_CLAVE)
+    return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
+
+  const token = await crearSesion(usuario, "admin");
+  res.json({ token, usuario });
+});
+
+async function exigirAdmin(req, res, siguiente) {
+  const sesion = await sesionDesdeRequest(req);
+  if (!sesion || sesion.rol !== "admin") return res.status(403).json({ error: "Acceso restringido." });
+  siguiente();
+}
+
+app.get("/api/admin/mensajes", exigirAdmin, async (req, res) => {
+  const mensajes = await db.collection("mensajes").find({}).sort({ fecha: -1 }).toArray();
+  res.json(mensajes);
+});
+
+app.get("/api/admin/partidas", exigirAdmin, async (req, res) => {
+  const partidas = await db.collection("partidas").find({}).sort({ fecha: -1 }).limit(200).toArray();
+  res.json(partidas);
 });
 
 app.listen(process.env.PORT || 3000, () =>
