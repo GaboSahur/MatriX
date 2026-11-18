@@ -5,7 +5,7 @@
  * -----------------------------------------------------------
  */
 
-const URL_API = "https://matrix-fvd7.onrender.com";
+import { API_URL, obtenerToken } from "./sesion.js";
 import { CONTENT_LIBRARY } from "./content-library.js";
 import { generarEjercicioFracciones } from "./generadores/fracciones.js";
 import { generarEjercicioDecimales } from "./generadores/decimales.js";
@@ -236,13 +236,21 @@ function finalizarPartida() {
   document.getElementById("resultado-correctas").textContent = estado.correctas;
   document.getElementById("resultado-incorrectas").textContent = estado.incorrectas;
 
-  guardarPartida({
-  nivel: estado.nivelKey,
-  puntaje: estado.puntaje,
-  correctas: estado.correctas,
-  incorrectas: estado.incorrectas,
-  });
-
+async function guardarPartida(datos) {
+  try {
+    const token = obtenerToken();
+    await fetch(`${API_URL}/api/partidas`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(datos),
+    });
+  } catch (error) {
+    console.warn("No se pudo guardar la partida:", error);
+  }
+}
   mostrarDatoCurioso(estado.puntaje || estado.correctas);
 
   document.dispatchEvent(
