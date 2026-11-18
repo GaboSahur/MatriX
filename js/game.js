@@ -264,7 +264,7 @@ function generarEjercicioPorTema(tema) {
 
 
 /* ============================================================
-   INTEGRACIONES: voz (Web Speech API) y dato curioso (Numbers API)
+   INTEGRACIONES: voz (Web Speech API) y dato curioso (local)
    ============================================================ */
 let vozActivada = false;
 
@@ -299,7 +299,18 @@ function crearBotonVoz() {
   barra.append(boton);
 }
 
-async function mostrarDatoCurioso(numero) {
+const DATOS_CURIOSOS = [
+  "el cero empezó a usarse como número en la India, alrededor del siglo V.",
+  "el 2 es el único número primo par: todos los demás pares son divisibles por 2.",
+  "multiplicar cualquier número por 10 le agrega un cero al final: 36 × 10 = 360.",
+  "el signo = fue propuesto por el matemático Robert Recorde en 1557.",
+  "para dividir por 5 también podés multiplicar por 2 y dividir por 10.",
+  "una circunferencia tiene 360 grados, un número con muchos divisores.",
+  "los hexágonos del panal de abejas son la forma que mejor aprovecha el espacio.",
+  "un número es primo si solo es divisible por 1 y por sí mismo.",
+];
+
+function mostrarDatoCurioso(numero) {
   const contenedor = document.getElementById("pantalla-resultado");
   if (!contenedor) return;
 
@@ -310,21 +321,10 @@ async function mostrarDatoCurioso(numero) {
     dato.style.cssText = "font-style: italic; max-width: 520px; margin: 16px auto;";
     contenedor.querySelector(".hero-actions")?.before(dato);
   }
-  dato.textContent = "Buscando un dato curioso...";
 
-  try {
-    const controlador = new AbortController();
-    const limite = setTimeout(() => controlador.abort(), 5000);
-    const respuesta = await fetch(`https://numbersapi.com/${numero}/trivia`, {
-      signal: controlador.signal,
-    });
-    clearTimeout(limite);
-    if (!respuesta.ok) throw new Error("Numbers API respondió con error");
-    dato.textContent = `Sabías que… ${await respuesta.text()}`;
-  } catch (error) {
-    console.warn("No se pudo cargar el dato curioso:", error);
-    dato.textContent = "";
-  }
+  // Dato local (sin red): el mismo puntaje siempre muestra el mismo dato
+  const indice = Math.abs(Number(numero) || 0) % DATOS_CURIOSOS.length;
+  dato.textContent = `Sabías que… ${DATOS_CURIOSOS[indice]}`;
 }
 
 document.addEventListener("DOMContentLoaded", crearBotonVoz);
