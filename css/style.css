@@ -765,3 +765,46 @@ html.menu-compacto .site-header .container.nav > * { padding-left: 0; padding-ri
   .container.hero > .hero-copy,
   .container.hero > .hero-visual { grid-column: 1; grid-row: auto; }
 }
+
+/* ============================================================
+   BARRA DE CUENTA: arriba a la derecha
+   ============================================================ */
+.cuenta-barra {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cuenta-usuario {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+.cuenta-boton {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cuenta-boton:hover { border-color: var(--accent); color: var(--accent); }
+.cuenta-boton-primario { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cuenta-boton-primario:hover { color: #fff; opacity: 0.9; }
+
+@media (max-width: 860px) {
+  .cuenta-barra { top: auto; bottom: 16px; right: 16px; }
+}

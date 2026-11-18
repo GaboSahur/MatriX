@@ -29,45 +29,34 @@ export async function cerrarSesion() {
   localStorage.removeItem(CLAVE_SESION);
 }
 
-// Agrega al menú "Ingresar / Registrarse" o "Hola, usuario · Salir"
+// Muestra "Ingresar / Registrarse" o "Hola, usuario · Cerrar sesión" arriba a la derecha
 export function pintarCuenta() {
-  const nav = document.querySelector(".nav-links");
-  if (!nav) return;
-  nav.querySelectorAll(".item-cuenta").forEach((el) => el.remove());
+  document.querySelectorAll(".cuenta-barra").forEach((el) => el.remove());
+
+  const barra = document.createElement("div");
+  barra.className = "cuenta-barra";
 
   const sesion = obtenerSesion();
-  const elementos = [];
-
   if (sesion) {
-    const saludo = document.createElement("li");
-    saludo.className = "item-cuenta";
-    saludo.innerHTML = `<span class="cuenta-usuario">Hola, ${sesion.usuario}</span>`;
+    const saludo = document.createElement("span");
+    saludo.className = "cuenta-usuario";
+    saludo.textContent = `Hola, ${sesion.usuario}`;
 
-    const salir = document.createElement("li");
-    salir.className = "item-cuenta";
     const boton = document.createElement("button");
     boton.type = "button";
-    boton.className = "ui-toggle";
+    boton.className = "cuenta-boton";
     boton.textContent = "Cerrar sesión";
     boton.addEventListener("click", async () => {
       await cerrarSesion();
       window.location.href = "index.html";
     });
-    salir.append(boton);
-    elementos.push(saludo, salir);
+    barra.append(saludo, boton);
   } else {
-    elementos.push(
-      Object.assign(document.createElement("li"), {
-        className: "item-cuenta",
-        innerHTML: '<a href="ingresar.html">Ingresar</a>',
-      }),
-      Object.assign(document.createElement("li"), {
-        className: "item-cuenta",
-        innerHTML: '<a href="registro.html">Registrarse</a>',
-      })
-    );
+    barra.innerHTML =
+      '<a class="cuenta-boton" href="ingresar.html">Ingresar</a>' +
+      '<a class="cuenta-boton cuenta-boton-primario" href="registro.html">Registrarse</a>';
   }
-  nav.append(...elementos);
+  document.body.append(barra);
 }
 
 document.addEventListener("DOMContentLoaded", pintarCuenta);
