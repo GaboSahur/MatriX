@@ -29,8 +29,22 @@ export async function cerrarSesion() {
   localStorage.removeItem(CLAVE_SESION);
 }
 
-// Muestra "Ingresar / Registrarse" o "Hola, usuario · Cerrar sesión" arriba a la derecha
-export function pintarCuenta() {
+// Foto (o inicial del nombre) + nombre de usuario, arriba a la derecha
+function crearAvatar(foto, usuario) {
+  if (foto) {
+    const img = document.createElement("img");
+    img.className = "cuenta-foto";
+    img.alt = "";
+    img.src = foto;
+    return img;
+  }
+  const letra = document.createElement("span");
+  letra.className = "cuenta-foto cuenta-foto-letra";
+  letra.textContent = (usuario || "?").charAt(0).toUpperCase();
+  return letra;
+}
+
+export async function pintarCuenta() {
   document.querySelectorAll(".cuenta-barra").forEach((el) => el.remove());
 
   const barra = document.createElement("div");
@@ -38,25 +52,36 @@ export function pintarCuenta() {
 
   const sesion = obtenerSesion();
   if (sesion) {
-    const saludo = document.createElement("a");
-    saludo.className = "cuenta-usuario";
-    saludo.href = "perfil.html";
-    saludo.textContent = `Hola, ${sesion.usuario}`;
+    const enlace = document.createElement("a");
+    enlace.className = "cuenta-perfil";
+    enlace.href = "perfil.html";
+    const nombre = document.createElement("span");
+    nombre.textContent = sesion.usuario;
+    enlace.append(crearAvatar(sesion.foto, sesion.usuario), nombre);
+    barra.append(enlace);
+    document.body.append(barra);
 
-    const boton = document.createElement("button");
-    boton.type = "button";
-    boton.className = "cuenta-boton";
-    boton.textContent = "Cerrar sesión";
-    boton.addEventListener("click", async () => {
-      await cerrarSesion();
-      window.location.href = "index.html";
-    });
-    barra.append(saludo, boton);
-  } else {
-    barra.innerHTML =
-      '<a class="cuenta-boton" href="ingresar.html">Ingresar</a>' +
-      '<a class="cuenta-boton cuenta-boton-primario" href="registro.html">Registrarse</a>';
+    // Si todavía no tenemos la foto guardada, la pedimos una vez
+    if (sesion.foto === undefined) {
+      try {
+        const respuesta = await fetch(`${API_URL}/api/perfil`, {
+          headers: { Authorization: `Bearer ${sesion.token}` },
+        });
+        if (respuesta.ok) {
+          const datos = await respuesta.json();
+          guardarSesion({ ...sesion, foto: datos.foto || "" });
+          enlace.replaceChild(crearAvatar(datos.foto, sesion.usuario), enlace.firstChild);
+        }
+      } catch {
+        /* sin foto por ahora */
+      }
+    }
+    return;
   }
+
+  barra.innerHTML =
+    '<a class="cuenta-boton" href="ingresar.html">Ingresar</a>' +
+    '<a class="cuenta-boton cuenta-boton-primario" href="registro.html">Registrarse</a>';
   document.body.append(barra);
 }
 

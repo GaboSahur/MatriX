@@ -891,3 +891,33 @@ table.ranking th, table.ranking td { text-align: left; }
   .tutor-flotante { bottom: 12px; right: 12px; }
   .tutor-panel { right: 12px; bottom: 64px; }
 }
+
+/* Perfil en la barra superior: foto + nombre */
+.cuenta-perfil {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.cuenta-perfil:hover { border-color: var(--accent); color: var(--accent); }
+.cuenta-foto {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
