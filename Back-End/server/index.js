@@ -216,7 +216,7 @@ app.post("/api/chat", async (req, res) => {
   let respuesta;
   try {
     respuesta = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
     {
       signal: controlador.signal,
       method: "POST",
@@ -227,7 +227,7 @@ app.post("/api/chat", async (req, res) => {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: INSTRUCCIONES_TUTOR }] },
         contents: [{ role: "user", parts: [{ text: pregunta }] }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.4, thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: { maxOutputTokens: 800, temperature: 0.4 },
       }),
     }
     );
