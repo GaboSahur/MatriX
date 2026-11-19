@@ -212,7 +212,7 @@ app.post("/api/chat", async (req, res) => {
   if (!pregunta) return res.status(400).json({ error: "Escribí una pregunta." });
 
   const respuesta = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
     {
       method: "POST",
       headers: {
