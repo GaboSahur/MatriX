@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi perfil · NumeraX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="perfil" data-title-suffix="Mi perfil">
+
+  <header class="site-header">
+    <div class="container nav">
+      <a href="index.html" class="brand">
+        <h1 class="brand-name" data-brand-name>NumeraX</h1>
+        <span class="brand-tag" data-brand-tag>Práctica de matemática</span>
+      </a>
+      <button class="nav-toggle" aria-expanded="false" aria-controls="menu-principal">☰ Menú</button>
+      <ul class="nav-links" id="menu-principal">
+        <li><a href="index.html" data-page="inicio">Inicio</a></li>
+        <li><a href="catalogo.html" data-page="catalogo">Niveles</a></li>
+        <li><a href="ranking.html" data-page="ranking">Ranking</a></li>
+        <li><a href="contacto.html" data-page="contacto">Contacto</a></li>
+        <li><a href="login.html" data-page="login">Admin</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="container">
+        <div class="section-head" style="margin: 0 auto 28px; text-align:center; max-width: 520px;">
+          <span class="eyebrow">Mi perfil</span>
+          <h2 id="titulo-perfil">Cargando...</h2>
+          <p>Editá tu nombre de usuario y contá algo sobre vos.</p>
+        </div>
+
+        <div class="form-card" style="max-width: 520px; margin: 0 auto;">
+          <div class="alert alert-error" id="alerta-error" role="alert"></div>
+          <div class="alert alert-success" id="alerta-ok" role="status"></div>
+
+          <form id="form-perfil" novalidate>
+            <div class="field">
+              <label for="usuario">Nombre de usuario</label>
+              <input type="text" id="usuario" name="usuario" maxlength="20" autocomplete="username" />
+            </div>
+            <div class="field">
+              <label for="descripcion">Descripción</label>
+              <textarea id="descripcion" name="descripcion" maxlength="200" placeholder="Ej: Me gusta resolver desafíos mixtos"></textarea>
+              <span class="field-error" id="contador">0/200</span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="btn-guardar">Guardar cambios</button>
+          </form>
+
+          <h3 style="margin-top:28px;">Mis mejores partidas</h3>
+          <table class="ranking" id="tabla-partidas" style="display:none;">
+            <thead><tr><th>Nivel</th><th>Puntaje</th><th>Fecha</th></tr></thead>
+            <tbody id="partidas-body"></tbody>
+          </table>
+          <p class="empty-state" id="partidas-vacio">Todavía no jugaste partidas con tu cuenta.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span data-current-year></span> <span data-brand-name>NumeraX</span></span>
+      <span>Proyecto final · Ruta avanzada · Jóvenes creaTIvos</span>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/common.js"></script>
+  <script type="module" src="js/sesion.js"></script>
+  <script type="module">
+    import { API_URL, obtenerSesion, obtenerToken, guardarSesion } from "./js/sesion.js";
+
+    const NIVELES = { suma: "Sumas", resta: "Restas", multiplicacion: "Multiplicación", division: "División", mixto: "Desafío mixto" };
+    const sesion = obtenerSesion();
+
+    if (!sesion) {
+      window.location.href = "ingresar.html";
+    }
+
+    const form = document.getElementById("form-perfil");
+    const inputUsuario = document.getElementById("usuario");
+    const inputDescripcion = document.getElementById("descripcion");
+    const contador = document.getElementById("contador");
+    const alertaError = document.getElementById("alerta-error");
+    const alertaOk = document.getElementById("alerta-ok");
+    const boton = document.getElementById("btn-guardar");
+
+    function mostrar(el, texto) {
+      el.textContent = texto;
+      el.classList.add("show", "visible");
+    }
+    function ocultarAlertas() {
+      [alertaError, alertaOk].forEach((el) => {
+        el.textContent = "";
+        el.classList.remove("show", "visible");
+      });
+    }
+    function actualizarContador() {
+      contador.textContent = `${inputDescripcion.value.length}/200`;
+    }
+    inputDescripcion.addEventListener("input", actualizarContador);
+
+    async function cargarPerfil() {
+      try {
+        const respuesta = await fetch(`${API_URL}/api/perfil`, {
+          headers: { Authorization: `Bearer ${obtenerToken()}` },
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) throw new Error(datos.error);
+
+        inputUsuario.value = datos.usuario;
+        inputDescripcion.value = datos.descripcion;
+        actualizarContador();
+        document.getElementById("titulo-perfil").textContent = datos.usuario;
+      } catch (error) {
+        mostrar(alertaError, error.message || "No se pudo cargar tu perfil.");
+      }
+      cargarPartidas();
+    }
+
+    async function cargarPartidas() {
+      try {
+        const respuesta = await fetch(`${API_URL}/api/jugadores/${encodeURIComponent(sesion.usuario)}`);
+        const datos = await respuesta.json();
+        if (!respuesta.ok || datos.partidas.length === 0) return;
+
+        const cuerpo = document.getElementById("partidas-body");
+        cuerpo.innerHTML = "";
+        datos.partidas.forEach((p) => {
+          const fila = document.createElement("tr");
+          [NIVELES[p.nivel] || p.nivel, p.puntaje, new Date(p.fecha).toLocaleDateString("es-UY")].forEach((v) => {
+            const celda = document.createElement("td");
+            celda.textContent = v;
+            fila.append(celda);
+          });
+          cuerpo.append(fila);
+        });
+        document.getElementById("tabla-partidas").style.display = "table";
+        document.getElementById("partidas-vacio").style.display = "none";
+      } catch {
+        /* sin partidas para mostrar */
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      ocultarAlertas();
+      boton.disabled = true;
+      boton.textContent = "Guardando...";
+      try {
+        const respuesta = await fetch(`${API_URL}/api/perfil`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${obtenerToken()}`,
+          },
+          body: JSON.stringify({
+            usuario: inputUsuario.value.trim(),
+            descripcion: inputDescripcion.value,
+          }),
+        });
+        const datos = await respuesta.json();
+        if (!respuesta.ok) throw new Error(datos.error || "No se pudieron guardar los cambios.");
+
+        // Actualizar el nombre que se muestra en el menú
+        guardarSesion({ token: obtenerToken(), usuario: datos.usuario });
+        document.getElementById("titulo-perfil").textContent = datos.usuario;
+        mostrar(alertaOk, "Cambios guardados.");
+      } catch (error) {
+        mostrar(alertaError, error.message);
+      } finally {
+        boton.disabled = false;
+        boton.textContent = "Guardar cambios";
+      }
+    });
+
+    if (sesion) cargarPerfil();
+  </script>
+</body>
+</html>

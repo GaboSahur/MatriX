@@ -38,8 +38,9 @@ export function pintarCuenta() {
 
   const sesion = obtenerSesion();
   if (sesion) {
-    const saludo = document.createElement("span");
+    const saludo = document.createElement("a");
     saludo.className = "cuenta-usuario";
+    saludo.href = "perfil.html";
     saludo.textContent = `Hola, ${sesion.usuario}`;
 
     const boton = document.createElement("button");

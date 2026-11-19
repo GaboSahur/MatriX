@@ -196,6 +196,74 @@ app.get("/api/admin/partidas", exigirAdmin, async (req, res) => {
 });
 
 
+// ---------- Perfil del jugador ----------
+const REGEX_USUARIO = /^[a-zA-Z0-9_]{3,20}$/;
+
+async function jugadorDesdeRequest(req) {
+  const sesion = await sesionDesdeRequest(req);
+  return sesion && sesion.rol === "jugador" ? sesion : null;
+}
+
+app.get("/api/perfil", async (req, res) => {
+  const sesion = await jugadorDesdeRequest(req);
+  if (!sesion) return res.status(401).json({ error: "Iniciá sesión para ver tu perfil." });
+
+  const cuenta = await db.collection("usuarios").findOne({ usuario: sesion.usuario });
+  if (!cuenta) return res.status(404).json({ error: "Cuenta no encontrada." });
+
+  res.json({ usuario: cuenta.usuario, descripcion: cuenta.descripcion || "", creado: cuenta.creado });
+});
+
+app.put("/api/perfil", async (req, res) => {
+  const sesion = await jugadorDesdeRequest(req);
+  if (!sesion) return res.status(401).json({ error: "Iniciá sesión para editar tu perfil." });
+
+  const anterior = sesion.usuario;
+  const nuevo = String(req.body.usuario ?? anterior).trim();
+  const descripcion = String(req.body.descripcion ?? "").trim().slice(0, 200);
+
+  if (!REGEX_USUARIO.test(nuevo))
+    return res.status(400).json({ error: "El usuario debe tener entre 3 y 20 letras, números o guion bajo." });
+
+  try {
+    if (nuevo !== anterior) {
+      await db.collection("usuarios").updateOne(
+        { usuario: anterior },
+        { $set: { usuario: nuevo, descripcion } }
+      );
+      // Mantener el mismo nombre en partidas y sesiones abiertas
+      await db.collection("partidas").updateMany({ usuario: anterior }, { $set: { usuario: nuevo, nombre: nuevo } });
+      await db.collection("sesiones").updateMany({ usuario: anterior }, { $set: { usuario: nuevo } });
+    } else {
+      await db.collection("usuarios").updateOne({ usuario: anterior }, { $set: { descripcion } });
+    }
+    res.json({ usuario: nuevo, descripcion });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ error: "Ese nombre de usuario ya existe." });
+    throw error;
+  }
+});
+
+// Perfil público: lo ven otros jugadores
+app.get("/api/jugadores/:usuario", async (req, res) => {
+  const cuenta = await db.collection("usuarios").findOne({ usuario: req.params.usuario });
+  if (!cuenta) return res.status(404).json({ error: "Jugador no encontrado." });
+
+  const partidas = await db
+    .collection("partidas")
+    .find({ usuario: cuenta.usuario }, { projection: { _id: 0, nivel: 1, puntaje: 1, fecha: 1 } })
+    .sort({ puntaje: -1 })
+    .limit(10)
+    .toArray();
+
+  res.json({
+    usuario: cuenta.usuario,
+    descripcion: cuenta.descripcion || "",
+    creado: cuenta.creado,
+    partidas,
+  });
+});
+
 // ---------- Tutor con IA (Gemini) ----------
 const INSTRUCCIONES_TUTOR = `Sos un tutor de matemática para chicos de secundaria, en español rioplatense (usá "vos").
 Explicá conceptos con claridad y paso a paso, con ejemplos simples.
