@@ -216,7 +216,7 @@ app.post("/api/chat", async (req, res) => {
   let respuesta;
   try {
     respuesta = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
     {
       signal: controlador.signal,
       method: "POST",
