@@ -211,7 +211,7 @@ app.get("/api/perfil", async (req, res) => {
   const cuenta = await db.collection("usuarios").findOne({ usuario: sesion.usuario });
   if (!cuenta) return res.status(404).json({ error: "Cuenta no encontrada." });
 
-  res.json({ usuario: cuenta.usuario, descripcion: cuenta.descripcion || "", creado: cuenta.creado });
+  res.json({ usuario: cuenta.usuario, descripcion: cuenta.descripcion || "", foto: cuenta.foto || "", creado: cuenta.creado });
 });
 
 app.put("/api/perfil", async (req, res) => {
@@ -225,19 +225,26 @@ app.put("/api/perfil", async (req, res) => {
   if (!REGEX_USUARIO.test(nuevo))
     return res.status(400).json({ error: "El usuario debe tener entre 3 y 20 letras, números o guion bajo." });
 
+  const campos = { descripcion };
+  if (req.body.foto !== undefined) {
+    const foto = String(req.body.foto || "");
+    if (foto !== "" && (!/^data:image\/(jpeg|png|webp);base64,/.test(foto) || foto.length > 200000))
+      return res.status(400).json({ error: "La foto tiene que ser una imagen chica (JPG, PNG o WebP)." });
+    campos.foto = foto;
+  }
+
   try {
     if (nuevo !== anterior) {
-      await db.collection("usuarios").updateOne(
-        { usuario: anterior },
-        { $set: { usuario: nuevo, descripcion } }
-      );
+      campos.usuario = nuevo;
+      await db.collection("usuarios").updateOne({ usuario: anterior }, { $set: campos });
       // Mantener el mismo nombre en partidas y sesiones abiertas
       await db.collection("partidas").updateMany({ usuario: anterior }, { $set: { usuario: nuevo, nombre: nuevo } });
       await db.collection("sesiones").updateMany({ usuario: anterior }, { $set: { usuario: nuevo } });
     } else {
-      await db.collection("usuarios").updateOne({ usuario: anterior }, { $set: { descripcion } });
+      await db.collection("usuarios").updateOne({ usuario: anterior }, { $set: campos });
     }
-    res.json({ usuario: nuevo, descripcion });
+    const cuenta = await db.collection("usuarios").findOne({ usuario: nuevo });
+    res.json({ usuario: nuevo, descripcion, foto: cuenta.foto || "" });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ error: "Ese nombre de usuario ya existe." });
     throw error;
@@ -259,6 +266,7 @@ app.get("/api/jugadores/:usuario", async (req, res) => {
   res.json({
     usuario: cuenta.usuario,
     descripcion: cuenta.descripcion || "",
+    foto: cuenta.foto || "",
     creado: cuenta.creado,
     partidas,
   });

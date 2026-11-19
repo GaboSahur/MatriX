@@ -41,6 +41,12 @@
           <div class="alert alert-success" id="alerta-ok" role="status"></div>
 
           <form id="form-perfil" novalidate>
+            <div class="field" style="text-align:center;">
+              <img id="foto-preview" alt="Foto de perfil" src="" style="width:112px;height:112px;border-radius:50%;object-fit:cover;border:1px solid var(--border);background:var(--bg);display:block;margin:0 auto 12px;" />
+              <label for="foto" class="cuenta-boton" style="display:inline-flex;cursor:pointer;">Cambiar foto</label>
+              <input type="file" id="foto" accept="image/jpeg,image/png,image/webp" hidden />
+              <button type="button" id="quitar-foto" class="cuenta-boton" style="margin-left:8px;">Quitar</button>
+            </div>
             <div class="field">
               <label for="usuario">Nombre de usuario</label>
               <input type="text" id="usuario" name="usuario" maxlength="20" autocomplete="username" />
@@ -91,6 +97,48 @@
     const alertaError = document.getElementById("alerta-error");
     const alertaOk = document.getElementById("alerta-ok");
     const boton = document.getElementById("btn-guardar");
+    const inputFoto = document.getElementById("foto");
+    const preview = document.getElementById("foto-preview");
+    let fotoNueva = undefined; // undefined = no cambia; "" = quitar; data URL = nueva
+
+    // Achica la imagen a 256 px y la guarda como JPG chico
+    function achicarImagen(archivo) {
+      return new Promise((resolver, rechazar) => {
+        const lector = new FileReader();
+        lector.onerror = rechazar;
+        lector.onload = () => {
+          const img = new Image();
+          img.onerror = rechazar;
+          img.onload = () => {
+            const lado = 256;
+            const recorte = Math.min(img.width, img.height);
+            const x = (img.width - recorte) / 2, y = (img.height - recorte) / 2;
+            const canvas = document.createElement("canvas");
+            canvas.width = lado; canvas.height = lado;
+            canvas.getContext("2d").drawImage(img, x, y, recorte, recorte, 0, 0, lado, lado);
+            resolver(canvas.toDataURL("image/jpeg", 0.8));
+          };
+          img.src = lector.result;
+        };
+        lector.readAsDataURL(archivo);
+      });
+    }
+
+    inputFoto.addEventListener("change", async () => {
+      const archivo = inputFoto.files[0];
+      if (!archivo) return;
+      try {
+        fotoNueva = await achicarImagen(archivo);
+        preview.src = fotoNueva;
+      } catch {
+        mostrar(alertaError, "No se pudo leer la imagen.");
+      }
+    });
+
+    document.getElementById("quitar-foto").addEventListener("click", () => {
+      fotoNueva = "";
+      preview.src = "";
+    });
 
     function mostrar(el, texto) {
       el.textContent = texto;
@@ -119,6 +167,7 @@
         inputDescripcion.value = datos.descripcion;
         actualizarContador();
         document.getElementById("titulo-perfil").textContent = datos.usuario;
+        preview.src = datos.foto || "";
       } catch (error) {
         mostrar(alertaError, error.message || "No se pudo cargar tu perfil.");
       }
@@ -164,6 +213,7 @@
           body: JSON.stringify({
             usuario: inputUsuario.value.trim(),
             descripcion: inputDescripcion.value,
+            ...(fotoNueva !== undefined ? { foto: fotoNueva } : {}),
           }),
         });
         const datos = await respuesta.json();
@@ -172,6 +222,8 @@
         // Actualizar el nombre que se muestra en el menú
         guardarSesion({ token: obtenerToken(), usuario: datos.usuario });
         document.getElementById("titulo-perfil").textContent = datos.usuario;
+        preview.src = datos.foto || "";
+        fotoNueva = undefined;
         mostrar(alertaOk, "Cambios guardados.");
       } catch (error) {
         mostrar(alertaError, error.message);
