@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel admin</title>
-  
+  <title>Panel admin · NumeraX</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-page="admin" data-title-suffix="Panel admin">
+
   <header class="site-header">
     <div class="container nav">
       <a href="index.html" class="brand">
@@ -33,60 +33,29 @@
         <div class="admin-header">
           <div>
             <span class="eyebrow">Panel privado</span>
-            <h2 style="margin-bottom:0;">Ranking y mensajes</h2>
+            <h2 style="margin-bottom:0;">Partidas y mensajes</h2>
           </div>
-          <button class="btn btn-secondary" id="btn-logout">Cerrar sesión</button>
+          <button class="btn btn-secondary" id="btn-logout" type="button">Cerrar sesión</button>
         </div>
 
         <div class="section-head">
-          <h3 style="font-family: var(--font-display); color: var(--ink); margin-bottom: 4px;">Historial local de este navegador</h3>
-          <p style="margin-bottom:0;">
-            Esto es solo un registro de las partidas jugadas desde <strong>esta computadora</strong>
-            (guardado en <code>localStorage</code>). El ranking real, compartido entre todos los
-            conectado a Firestore.
-          </p>
+          <h3 style="font-family: var(--font-display); color: var(--ink); margin-bottom: 4px;">Últimas partidas</h3>
+          <p style="margin-bottom:0;">Partidas guardadas en el servidor, de todos los jugadores.</p>
         </div>
-        
-        <table class="ranking" style="margin-bottom:12px;">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Jugador</th>
-              <th>Nivel</th>
-              <th>Puntaje</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
-          <tbody id="ranking-body"></tbody>
+        <table class="ranking" id="tabla-partidas" style="display:none; margin-bottom:12px;">
+          <thead><tr><th>Jugador</th><th>Nivel</th><th>Puntaje</th><th>Correctas</th><th>Fecha</th></tr></thead>
+          <tbody id="partidas-body"></tbody>
         </table>
-        
-        <p class="empty-state hidden" id="ranking-vacio">
-          Todavía no hay partidas guardadas en este navegador.
-        </p>
-        
-        <p style="margin: 10px 0 40px;">
-          <button class="btn btn-ghost" id="btn-limpiar-ranking">Borrar ranking</button>
-        </p>
+        <p class="empty-state" id="partidas-vacio">Cargando partidas...</p>
 
-        <div class="section-head">
+        <div class="section-head" style="margin-top:40px;">
           <h3 style="font-family: var(--font-display); color: var(--ink);">Mensajes de contacto</h3>
         </div>
-        
-        <table class="ranking">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Mensaje</th>
-              <th>Fecha</th>
-            </tr>
-          </thead>
+        <table class="ranking" id="tabla-mensajes" style="display:none;">
+          <thead><tr><th>Nombre</th><th>Correo</th><th>Mensaje</th><th>Fecha</th></tr></thead>
           <tbody id="mensajes-body"></tbody>
         </table>
-        
-        <p class="empty-state hidden" id="mensajes-vacio">
-          Todavía no llegaron mensajes por el formulario de contacto.
-        </p>
+        <p class="empty-state" id="mensajes-vacio">Cargando mensajes...</p>
       </div>
     </section>
   </main>
@@ -97,7 +66,93 @@
       <span>Proyecto final · Ruta avanzada · Jóvenes creaTIvos</span>
     </div>
   </footer>
+
   <script src="js/config.js"></script>
   <script src="js/common.js"></script>
+  <script type="module">
+    const API_URL = "https://matrix-fvd7.onrender.com";
+    const CLAVE_ADMIN = "numerax_admin";
+
+    function sesionAdmin() {
+      try { return JSON.parse(localStorage.getItem(CLAVE_ADMIN) || "null"); } catch { return null; }
+    }
+    const sesion = sesionAdmin();
+    if (!sesion) window.location.href = "login.html";
+
+    const fmtFecha = (iso) => (iso ? new Date(iso).toLocaleString("es-UY") : "");
+
+    function llenarTabla(cuerpo, filas, columnas) {
+      cuerpo.innerHTML = "";
+      filas.forEach((fila) => {
+        const tr = document.createElement("tr");
+        columnas.forEach((col) => {
+          const td = document.createElement("td");
+          td.textContent = col(fila) ?? "";
+          tr.append(td);
+        });
+        cuerpo.append(tr);
+      });
+    }
+
+    async function pedir(ruta) {
+      const respuesta = await fetch(`${API_URL}${ruta}`, {
+        headers: { Authorization: `Bearer ${sesion.token}` },
+      });
+      if (respuesta.status === 401 || respuesta.status === 403) {
+        localStorage.removeItem(CLAVE_ADMIN);
+        window.location.href = "login.html";
+        throw new Error("Sesión vencida");
+      }
+      if (!respuesta.ok) throw new Error("No se pudo cargar");
+      return respuesta.json();
+    }
+
+    async function cargarPartidas() {
+      const estado = document.getElementById("partidas-vacio");
+      try {
+        const partidas = await pedir("/api/admin/partidas");
+        if (partidas.length === 0) return (estado.textContent = "Todavía no hay partidas.");
+        llenarTabla(document.getElementById("partidas-body"), partidas, [
+          (p) => p.usuario || "Anónimo",
+          (p) => p.nivel,
+          (p) => p.puntaje,
+          (p) => p.correctas,
+          (p) => fmtFecha(p.fecha),
+        ]);
+        document.getElementById("tabla-partidas").style.display = "table";
+        estado.style.display = "none";
+      } catch {
+        estado.textContent = "No se pudieron cargar las partidas.";
+      }
+    }
+
+    async function cargarMensajes() {
+      const estado = document.getElementById("mensajes-vacio");
+      try {
+        const mensajes = await pedir("/api/admin/mensajes");
+        if (mensajes.length === 0) return (estado.textContent = "Todavía no llegaron mensajes.");
+        llenarTabla(document.getElementById("mensajes-body"), mensajes, [
+          (m) => m.nombre,
+          (m) => m.email,
+          (m) => m.mensaje,
+          (m) => fmtFecha(m.fecha),
+        ]);
+        document.getElementById("tabla-mensajes").style.display = "table";
+        estado.style.display = "none";
+      } catch {
+        estado.textContent = "No se pudieron cargar los mensajes.";
+      }
+    }
+
+    document.getElementById("btn-logout").addEventListener("click", () => {
+      localStorage.removeItem(CLAVE_ADMIN);
+      window.location.href = "index.html";
+    });
+
+    if (sesion) {
+      cargarPartidas();
+      cargarMensajes();
+    }
+  </script>
 </body>
 </html>
