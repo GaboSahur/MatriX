@@ -211,9 +211,14 @@ app.post("/api/chat", async (req, res) => {
   const pregunta = String(req.body.pregunta || "").trim().slice(0, 300);
   if (!pregunta) return res.status(400).json({ error: "Escribí una pregunta." });
 
-  const respuesta = await fetch(
+  const controlador = new AbortController();
+  const limite = setTimeout(() => controlador.abort(), 20000);
+  let respuesta;
+  try {
+    respuesta = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
     {
+      signal: controlador.signal,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -225,7 +230,13 @@ app.post("/api/chat", async (req, res) => {
         generationConfig: { maxOutputTokens: 800, temperature: 0.4 },
       }),
     }
-  );
+    );
+  } catch (error) {
+    clearTimeout(limite);
+    console.error("Gemini no respondió a tiempo:", error.message);
+    return res.status(504).json({ error: "El tutor tardó demasiado. Probá de nuevo." });
+  }
+  clearTimeout(limite);
 
   if (!respuesta.ok) {
     console.error("Error de Gemini:", respuesta.status, await respuesta.text());
