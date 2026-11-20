@@ -135,6 +135,9 @@ app.get("/api/ranking", async (req, res) => {
   const inicio = inicioPeriodo(periodo);
   const filtro = { usuario: { $ne: null } };
   if (inicio) filtro.fecha = { $gte: inicio };
+  const niveles = ["suma", "resta", "multiplicacion", "division", "mixto"];
+  const nivel = String(req.query.nivel || "general");
+  if (niveles.includes(nivel)) filtro.nivel = nivel;
 
   const top = await db
     .collection("partidas")

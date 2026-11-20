@@ -36,6 +36,17 @@
           <p>Mejor puntaje de cada jugador, hasta 50 jugadores.</p>
         </div>
 
+        <div style="display:flex; justify-content:center; margin-bottom:14px;">
+          <select id="filtro-nivel" aria-label="Nivel" style="padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface); color:var(--ink); font-family:var(--font-body);">
+            <option value="general">Todos los niveles</option>
+            <option value="suma">Sumas</option>
+            <option value="resta">Restas</option>
+            <option value="multiplicacion">Multiplicación</option>
+            <option value="division">División</option>
+            <option value="mixto">Desafío mixto</option>
+          </select>
+        </div>
+
         <div class="tabs" role="tablist" aria-label="Período del ranking" style="justify-content:center;">
           <button class="tab-btn active" data-periodo="diario" role="tab" aria-selected="true" type="button">Diario</button>
           <button class="tab-btn" data-periodo="semanal" role="tab" aria-selected="false" type="button">Semanal</button>
@@ -101,10 +112,14 @@
       return new Date(iso).toLocaleDateString("es-UY", { day: "2-digit", month: "2-digit", year: "numeric" });
     }
 
-    async function cargarRanking(periodo = "diario") {
+    let periodoActual = "diario";
+    let nivelActual = "general";
+
+    async function cargarRanking(periodo = periodoActual) {
+      periodoActual = periodo;
       mostrarMensaje("Cargando ranking...");
       try {
-        const respuesta = await fetch(`${URL_API}/api/ranking?periodo=${periodo}`);
+        const respuesta = await fetch(`${URL_API}/api/ranking?periodo=${periodo}&nivel=${nivelActual}`);
         if (!respuesta.ok) throw new Error(`Estado ${respuesta.status}`);
         const partidas = await respuesta.json();
 
@@ -146,6 +161,11 @@
         });
         cargarRanking(boton.dataset.periodo);
       });
+    });
+
+    document.getElementById("filtro-nivel").addEventListener("change", (e) => {
+      nivelActual = e.target.value;
+      cargarRanking(periodoActual);
     });
 
     cargarRanking("diario");
