@@ -58,6 +58,7 @@ app.post("/api/registro", async (req, res) => {
   try {
     await db.collection("usuarios").insertOne({ usuario, clave: hashClave(clave), creado: new Date() });
     const token = await crearSesion(usuario);
+    await registrarAcceso(usuario);
     res.status(201).json({ token, usuario });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ error: "Ese nombre de usuario ya existe." });
@@ -74,6 +75,7 @@ app.post("/api/ingresar", async (req, res) => {
     return res.status(401).json({ error: "Usuario o contraseña incorrectos." });
 
   const token = await crearSesion(usuario);
+  await registrarAcceso(usuario);
   res.json({ token, usuario });
 });
 
@@ -286,6 +288,70 @@ app.get("/api/jugadores/:usuario", async (req, res) => {
     creado: cuenta.creado,
     partidas,
   });
+});
+
+// ---------- Racha de días (inicios de sesión) ----------
+await db.collection("accesos").createIndex({ usuario: 1, dia: 1 }, { unique: true });
+
+// Día del calendario en Uruguay, formato AAAA-MM-DD
+function diaUY(fecha = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Montevideo",
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(fecha);
+}
+
+function diaAnterior(dia) {
+  const t = new Date(dia + "T00:00:00Z").getTime() - 24 * 60 * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+function diaSiguiente(dia) {
+  const t = new Date(dia + "T00:00:00Z").getTime() + 24 * 60 * 60 * 1000;
+  return new Date(t).toISOString().slice(0, 10);
+}
+
+async function registrarAcceso(usuario) {
+  const dia = diaUY();
+  try {
+    await db.collection("accesos").updateOne({ usuario, dia }, { $set: { usuario, dia } }, { upsert: true });
+  } catch {
+    /* si ya estaba guardado, no pasa nada */
+  }
+}
+
+app.get("/api/racha", async (req, res) => {
+  const sesion = await jugadorDesdeRequest(req);
+  if (!sesion) return res.status(401).json({ error: "Iniciá sesión para ver tu racha." });
+
+  const desde = diaUY(new Date(Date.now() - 120 * 24 * 60 * 60 * 1000));
+  const docs = await db
+    .collection("accesos")
+    .find({ usuario: sesion.usuario, dia: { $gte: desde } }, { projection: { _id: 0, dia: 1 } })
+    .toArray();
+  const dias = docs.map((d) => d.dia).sort();
+  const conjunto = new Set(dias);
+
+  // Racha actual: días seguidos hasta hoy; si hoy todavía no ingresó, cuenta desde ayer
+  const hoy = diaUY();
+  let cursor = conjunto.has(hoy) ? hoy : diaAnterior(hoy);
+  let rachaActual = 0;
+  while (conjunto.has(cursor)) {
+    rachaActual++;
+    cursor = diaAnterior(cursor);
+  }
+
+  // Racha máxima dentro de los días guardados
+  let rachaMaxima = 0;
+  let corrida = 0;
+  let anterior = null;
+  for (const dia of dias) {
+    corrida = anterior && diaSiguiente(anterior) === dia ? corrida + 1 : 1;
+    rachaMaxima = Math.max(rachaMaxima, corrida);
+    anterior = dia;
+  }
+
+  res.json({ dias, rachaActual, rachaMaxima, hoy });
 });
 
 // ---------- Tutor con IA (Gemini) ----------
