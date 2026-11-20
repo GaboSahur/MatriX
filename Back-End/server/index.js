@@ -147,6 +147,8 @@ app.post("/api/partidas", async (req, res) => {
     return res.status(401).json({ error: "Iniciá sesión para guardar tu partida en el ranking." });
 
   const usuario = sesion.usuario;
+  // Partidas sin puntos no se guardan
+  if (puntaje <= 0) return res.status(200).json({ ok: true, guardada: false });
   await db.collection("partidas").insertOne({
     usuario,
     nombre: usuario,
