@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import Tutor from "./Tutor.jsx";
 
 const LINKS = [
   { to: "/", label: "Inicio" },
@@ -9,8 +10,11 @@ const LINKS = [
   { to: "/admin", label: "Admin" },
 ];
 
+const PAGINAS_CON_TUTOR = ["/", "/niveles", "/jugar"];
+
 export default function Layout({ children }) {
   const [abierto, setAbierto] = useState(false);
+  const { pathname } = useLocation();
 
   // Con el menú abierto en celular, la página de atrás no se desplaza
   useEffect(() => {
@@ -47,6 +51,8 @@ export default function Layout({ children }) {
       </header>
 
       <main>{children}</main>
+
+      {PAGINAS_CON_TUTOR.includes(pathname) && <Tutor />}
 
       <footer className="site-footer">
         <div className="container">
