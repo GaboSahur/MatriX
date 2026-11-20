@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { API_URL, cabeceraAuth } from "../lib/api.js";
 import { useSesion } from "../context/SesionContext.jsx";
 import { CONTENT_LIBRARY } from "../lib/content-library.js";
+import Calendario from "../components/Calendario.jsx";
 
 const NOMBRE_NIVEL = (id) => CONTENT_LIBRARY[id]?.titulo || id;
 
@@ -146,6 +147,7 @@ function PerfilPropio() {
   const [foto, setFoto] = useState("");
   const [fotoNueva, setFotoNueva] = useState(undefined); // undefined no cambia; "" quitar; data URL nueva
   const [partidas, setPartidas] = useState([]);
+  const [racha, setRacha] = useState(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -164,6 +166,11 @@ function PerfilPropio() {
     fetch(`${API_URL}/api/jugadores/${encodeURIComponent(sesion.usuario)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setPartidas(d.partidas))
+      .catch(() => {});
+
+    fetch(`${API_URL}/api/racha`, { headers: cabeceraAuth(sesion.token) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setRacha(d))
       .catch(() => {});
   }, [sesion]);
 
@@ -252,6 +259,17 @@ function PerfilPropio() {
               {guardando ? "Guardando..." : "Guardar cambios"}
             </button>
           </form>
+
+          <h3 style={{ marginTop: 28 }}>Mi racha</h3>
+          {racha && (
+            <>
+              <div className="racha-resumen">
+                <div className="racha-numero"><strong>{racha.rachaActual}</strong><span>días seguidos</span></div>
+                <div className="racha-numero"><strong>{racha.rachaMaxima}</strong><span>racha máxima</span></div>
+              </div>
+              <Calendario dias={racha.dias} />
+            </>
+          )}
 
           <h3 style={{ marginTop: 28 }}>Mis mejores partidas</h3>
           <Partidas partidas={partidas} />
