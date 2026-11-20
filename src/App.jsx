@@ -7,6 +7,7 @@ import Ranking from "./pages/Ranking.jsx";
 import Contacto from "./pages/Contacto.jsx";
 import Ingresar from "./pages/Ingresar.jsx";
 import Registro from "./pages/Registro.jsx";
+import Perfil from "./pages/Perfil.jsx";
 import Pendiente from "./pages/Pendiente.jsx";
 
 export default function App() {
@@ -21,8 +22,9 @@ export default function App() {
         <Route path="/ingresar" element={<Ingresar />} />
         <Route path="/registro" element={<Registro />} />
         {/* Se pasan en las próximas etapas */}
+        <Route path="/perfil" element={<Perfil />} />
+        <Route path="/perfil/:usuario" element={<Perfil />} />
         <Route path="/jugar" element={<Pendiente nombre="Juego" />} />
-        <Route path="/perfil" element={<Pendiente nombre="Perfil" />} />
         <Route path="/admin" element={<Pendiente nombre="Admin" />} />
         <Route path="*" element={<Pendiente nombre="Página no encontrada" />} />
       </Routes>
