@@ -71,7 +71,7 @@ export default function Layout({ children }) {
             </li>
             {LINKS.map((l) => (
               <li key={l.to}>
-                <NavLink to={l.to} end={l.to === "/"} onClick={() => setAbierto(false)}>
+                <NavLink to={l.to} end={l.to === "/"} data-corto={l.label.charAt(0)} onClick={() => setAbierto(false)}>
                   {l.label}
                 </NavLink>
               </li>
