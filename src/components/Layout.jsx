@@ -12,8 +12,35 @@ const LINKS = [
 
 const PAGINAS_CON_TUTOR = ["/", "/niveles", "/jugar"];
 
+const CLAVE_UI = "numerax_ui";
+
+function leerPrefsUI() {
+  try {
+    return JSON.parse(localStorage.getItem(CLAVE_UI) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function guardarPrefsUI(cambios) {
+  localStorage.setItem(CLAVE_UI, JSON.stringify({ ...leerPrefsUI(), ...cambios }));
+}
+
 export default function Layout({ children }) {
   const [abierto, setAbierto] = useState(false);
+  const [oscuro, setOscuro] = useState(() => leerPrefsUI().tema === "oscuro");
+  const [compacto, setCompacto] = useState(() => leerPrefsUI().menuCompacto === true);
+
+  // Aplica el modo y el tamaño del menú a toda la página
+  useEffect(() => {
+    document.documentElement.dataset.tema = oscuro ? "oscuro" : "claro";
+    guardarPrefsUI({ tema: oscuro ? "oscuro" : "claro" });
+  }, [oscuro]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("menu-compacto", compacto);
+    guardarPrefsUI({ menuCompacto: compacto });
+  }, [compacto]);
   const { pathname } = useLocation();
 
   // Con el menú abierto en celular, la página de atrás no se desplaza
@@ -39,6 +66,9 @@ export default function Layout({ children }) {
             ☰ Menú
           </button>
           <ul className={`nav-links ${abierto ? "open" : ""}`} id="menu-principal">
+            <li className="menu-cerrar-item">
+              <button type="button" className="menu-cerrar" onClick={() => setAbierto(false)}>✕ Cerrar menú</button>
+            </li>
             {LINKS.map((l) => (
               <li key={l.to}>
                 <NavLink to={l.to} end={l.to === "/"} onClick={() => setAbierto(false)}>
@@ -47,6 +77,16 @@ export default function Layout({ children }) {
               </li>
             ))}
           </ul>
+          <div className="ui-controles">
+            <button type="button" className="ui-toggle boton-tema" onClick={() => setOscuro((v) => !v)}>
+              <span aria-hidden="true">{oscuro ? "☀" : "☾"}</span>
+              <span className="texto">{oscuro ? "Modo claro" : "Modo oscuro"}</span>
+            </button>
+            <button type="button" className="ui-toggle boton-menu" onClick={() => setCompacto((v) => !v)}>
+              <span aria-hidden="true">{compacto ? "⇥" : "⇤"}</span>
+              <span className="texto">{compacto ? "Agrandar menú" : "Achicar menú"}</span>
+            </button>
+          </div>
         </div>
       </header>
 
