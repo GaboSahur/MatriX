@@ -1300,3 +1300,31 @@ html[data-tema="oscuro"] body[data-page="inicio"] .level-card:hover .icon { colo
   .menu-cerrar { display: block; }
   .menu-cerrar-item { list-style: none; }
 }
+
+/* Nombre del ranking con perfil emergente */
+.nombre-perfil { position: relative; display: inline-block; }
+.nombre-enlace { color: var(--accent); font-weight: 600; text-decoration: none; }
+.nombre-enlace:hover { text-decoration: underline; }
+.perfil-popover {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.popover-foto { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.popover-letra { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 1.6rem; font-weight: 700; }
+.popover-desc { color: var(--ink-soft); font-size: 0.8rem; }
+.popover-stat { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); text-transform: uppercase; }

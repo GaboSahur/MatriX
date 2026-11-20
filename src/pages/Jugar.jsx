@@ -170,6 +170,12 @@ export default function Jugar() {
       return;
     }
 
+    // Una partida sin puntos no se guarda
+    if (p.puntaje <= 0) {
+      setAviso("No sumaste puntos en esta partida, así que no se guardó.");
+      return;
+    }
+
     const datos = { nivel: p.nivel, puntaje: p.puntaje, correctas: p.correctas, incorrectas: p.incorrectas };
     if (p.nivelId) datos.nivelId = p.nivelId;
     const resultado = await guardarPartida(datos);

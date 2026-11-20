@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { API_URL } from "../lib/api.js";
 
 const PERIODOS = [
@@ -19,11 +20,66 @@ const NIVELES = [
 
 const NOMBRE_NIVEL = Object.fromEntries(NIVELES.map((n) => [n.id, n.label]));
 
+// Recuadro con la foto y el perfil del jugador, al pasar el mouse sobre el nombre
+function NombreConPerfil({ nombre }) {
+  const [abierto, setAbierto] = useState(false);
+  const [datos, setDatos] = useState(null);
+  const cache = useRef(new Map());
+
+  async function cargar() {
+    if (cache.current.has(nombre)) return setDatos(cache.current.get(nombre));
+    try {
+      const r = await fetch(`${API_URL}/api/jugadores/${encodeURIComponent(nombre)}`);
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      cache.current.set(nombre, d);
+      setDatos(d);
+    } catch {
+      setDatos({ error: true });
+    }
+  }
+
+  function abrir() {
+    setAbierto(true);
+    cargar();
+  }
+
+  return (
+    <span
+      className="nombre-perfil"
+      onMouseEnter={abrir}
+      onMouseLeave={() => setAbierto(false)}
+      onFocus={abrir}
+      onBlur={() => setAbierto(false)}
+    >
+      <Link to={`/perfil/${encodeURIComponent(nombre)}`} className="nombre-enlace">{nombre}</Link>
+      {abierto && (
+        <span className="perfil-popover" role="tooltip">
+          {!datos && <span>Cargando...</span>}
+          {datos?.error && <span>No se pudo cargar el perfil.</span>}
+          {datos && !datos.error && (
+            <>
+              {datos.foto ? (
+                <img src={datos.foto} alt="" className="popover-foto" />
+              ) : (
+                <span className="popover-foto popover-letra">{nombre.charAt(0).toUpperCase()}</span>
+              )}
+              <strong>{datos.usuario}</strong>
+              <span className="popover-desc">{datos.descripcion || "Sin descripción todavía."}</span>
+              <span className="popover-stat">{datos.partidas?.length || 0} partidas registradas</span>
+            </>
+          )}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export default function Ranking() {
   const [periodo, setPeriodo] = useState("diario");
   const [nivel, setNivel] = useState("general");
   const [partidas, setPartidas] = useState([]);
-  const [estado, setEstado] = useState("cargando"); // cargando | ok | error
+  const [estado, setEstado] = useState("cargando");
 
   useEffect(() => {
     let cancelado = false;
@@ -56,12 +112,7 @@ export default function Ranking() {
         </div>
 
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-          <select
-            value={nivel}
-            onChange={(e) => setNivel(e.target.value)}
-            aria-label="Nivel"
-            className="campo-select"
-          >
+          <select value={nivel} onChange={(e) => setNivel(e.target.value)} aria-label="Nivel" className="campo-select">
             {NIVELES.map((n) => (
               <option key={n.id} value={n.id}>{n.label}</option>
             ))}
@@ -106,7 +157,7 @@ export default function Ranking() {
                   {partidas.map((p, i) => (
                     <tr key={p.nombre + i}>
                       <td>{i + 1}</td>
-                      <td>{p.nombre || "Anónimo"}</td>
+                      <td><NombreConPerfil nombre={p.nombre || "Anónimo"} /></td>
                       <td>{NOMBRE_NIVEL[p.nivel] || p.nivel}</td>
                       <td>{p.puntaje}</td>
                       <td>{p.fecha ? new Date(p.fecha).toLocaleDateString("es-UY") : ""}</td>
