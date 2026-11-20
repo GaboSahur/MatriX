@@ -93,23 +93,85 @@ app.get("/api/yo", async (req, res) => {
 });
 
 // ---------- Partidas y ranking ----------
+// ---------- Progresión de niveles (25 = 5 por operación) ----------
+const OPERACIONES_PROGRESO = ["suma", "resta", "multiplicacion", "division", "mixto"];
+const TITULOS_OPERACION = { suma: "Sumas", resta: "Restas", multiplicacion: "Multiplicación", division: "División", mixto: "Desafío mixto" };
+const PORCENTAJE_PARA_COMPLETAR = 70;
+const RESPUESTAS_MINIMAS = 5;
+
+function listaNiveles(completados) {
+  const basicosCompletos = ["suma", "resta", "multiplicacion", "division"].every((op) =>
+    completados.includes(`${op}-5`)
+  );
+  const lista = [];
+  for (const op of OPERACIONES_PROGRESO) {
+    for (let n = 1; n <= 5; n++) {
+      const id = `${op}-${n}`;
+      let desbloqueado;
+      if (n > 1) desbloqueado = completados.includes(`${op}-${n - 1}`);
+      else desbloqueado = op === "mixto" ? basicosCompletos : true;
+      lista.push({
+        id,
+        operacion: op,
+        numero: n,
+        titulo: `${TITULOS_OPERACION[op]} ${n}`,
+        desbloqueado,
+        completado: completados.includes(id),
+      });
+    }
+  }
+  return lista;
+}
+
+async function completadosDe(usuario) {
+  const cuenta = await db.collection("usuarios").findOne({ usuario }, { projection: { _id: 0, progreso: 1 } });
+  return cuenta?.progreso || [];
+}
+
+// Progreso del jugador: solo para cuentas
+app.get("/api/progreso", async (req, res) => {
+  const sesion = await jugadorDesdeRequest(req);
+  if (!sesion) return res.status(401).json({ error: "Iniciá sesión para ver tu progreso." });
+  const completados = await completadosDe(sesion.usuario);
+  const niveles = listaNiveles(completados);
+  res.json({ niveles, completados: completados.length, total: niveles.length });
+});
+
+// Guardar una partida. Solo las cuentas pueden guardar; los invitados no entran al ranking.
 app.post("/api/partidas", async (req, res) => {
-  const { nivel, puntaje, correctas, incorrectas } = req.body;
+  const { nivel, nivelId, puntaje, correctas, incorrectas } = req.body;
   if (typeof puntaje !== "number") return res.status(400).json({ error: "Puntaje inválido" });
 
-  const sesion = await sesionDesdeRequest(req);
-  const usuario = sesion && sesion.rol === "jugador" ? sesion.usuario : null;
+  const sesion = await jugadorDesdeRequest(req);
+  if (!sesion)
+    return res.status(401).json({ error: "Iniciá sesión para guardar tu partida en el ranking." });
 
+  const usuario = sesion.usuario;
   await db.collection("partidas").insertOne({
     usuario,
-    nombre: usuario || "Anónimo",
+    nombre: usuario,
     nivel,
+    nivelId: nivelId || null,
     puntaje,
     correctas,
     incorrectas,
     fecha: new Date(),
   });
-  res.status(201).json({ ok: true, guardadaComo: usuario || "Anónimo" });
+
+  // Completar un nivel de progresión, si corresponde
+  let nivelCompletado = null;
+  if (nivelId) {
+    const completados = await completadosDe(usuario);
+    const lvl = listaNiveles(completados).find((l) => l.id === nivelId);
+    const respondidas = Number(correctas || 0) + Number(incorrectas || 0);
+    const porcentaje = respondidas > 0 ? (Number(correctas || 0) / respondidas) * 100 : 0;
+    if (lvl && lvl.desbloqueado && !lvl.completado && respondidas >= RESPUESTAS_MINIMAS && porcentaje >= PORCENTAJE_PARA_COMPLETAR) {
+      await db.collection("usuarios").updateOne({ usuario }, { $addToSet: { progreso: nivelId } });
+      nivelCompletado = nivelId;
+    }
+  }
+
+  res.status(201).json({ ok: true, guardadaComo: usuario, nivelCompletado });
 });
 
 // Inicio del período según la hora de Uruguay (UTC-3)
