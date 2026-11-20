@@ -251,6 +251,19 @@ app.put("/api/perfil", async (req, res) => {
   }
 });
 
+// Buscar jugadores por nombre (mínimo 2 letras)
+app.get("/api/usuarios", async (req, res) => {
+  const q = String(req.query.q || "").trim();
+  if (q.length < 2) return res.json([]);
+  const escapado = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const coincidencias = await db
+    .collection("usuarios")
+    .find({ usuario: { $regex: escapado, $options: "i" } }, { projection: { _id: 0, usuario: 1, foto: 1 } })
+    .limit(10)
+    .toArray();
+  res.json(coincidencias);
+});
+
 // Perfil público: lo ven otros jugadores
 app.get("/api/jugadores/:usuario", async (req, res) => {
   const cuenta = await db.collection("usuarios").findOne({ usuario: req.params.usuario });
