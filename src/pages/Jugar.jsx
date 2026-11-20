@@ -164,9 +164,14 @@ export default function Jugar() {
     const indice = Math.abs(Number(p.puntaje || p.correctas) || 0) % DATOS_CURIOSOS.length;
     setDatoCurioso(`Sabías que… ${DATOS_CURIOSOS[indice]}`);
 
-    // Solo las cuentas guardan; los invitados practican sin ranking
-    if (!logueado) {
-      setAviso("Practicaste sin cuenta, así que tu partida no entra al ranking. Ingresá para jugar la progresión y guardar tus puntajes.");
+    // Entran al ranking: los niveles de progresión y el desafío mixto (cuentas)
+    const enRanking = logueado && (Boolean(nivelId) || pedido === "mixto");
+    if (!enRanking) {
+      setAviso(
+        logueado
+          ? "Práctica: esta partida no entra al ranking."
+          : "Practicaste sin cuenta, así que tu partida no entra al ranking. Ingresá para jugar la progresión y guardar tus puntajes."
+      );
       return;
     }
 

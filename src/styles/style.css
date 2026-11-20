@@ -1306,9 +1306,7 @@ html[data-tema="oscuro"] body[data-page="inicio"] .level-card:hover .icon { colo
 .nombre-enlace { color: var(--accent); font-weight: 600; text-decoration: none; }
 .nombre-enlace:hover { text-decoration: underline; }
 .perfil-popover {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
+  position: fixed;
   z-index: 30;
   width: 220px;
   display: flex;

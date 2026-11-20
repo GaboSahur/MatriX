@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { API_URL } from "../lib/api.js";
 
@@ -23,8 +24,10 @@ const NOMBRE_NIVEL = Object.fromEntries(NIVELES.map((n) => [n.id, n.label]));
 // Recuadro con la foto y el perfil del jugador, al pasar el mouse sobre el nombre
 function NombreConPerfil({ nombre }) {
   const [abierto, setAbierto] = useState(false);
+  const [posicion, setPosicion] = useState({ top: 0, left: 0 });
   const [datos, setDatos] = useState(null);
   const cache = useRef(new Map());
+  const ref = useRef(null);
 
   async function cargar() {
     if (cache.current.has(nombre)) return setDatos(cache.current.get(nombre));
@@ -40,6 +43,8 @@ function NombreConPerfil({ nombre }) {
   }
 
   function abrir() {
+    const r = ref.current?.getBoundingClientRect();
+    if (r) setPosicion({ top: r.bottom + 8, left: r.left });
     setAbierto(true);
     cargar();
   }
@@ -47,30 +52,33 @@ function NombreConPerfil({ nombre }) {
   return (
     <span
       className="nombre-perfil"
+      ref={ref}
       onMouseEnter={abrir}
       onMouseLeave={() => setAbierto(false)}
       onFocus={abrir}
       onBlur={() => setAbierto(false)}
     >
       <Link to={`/perfil/${encodeURIComponent(nombre)}`} className="nombre-enlace">{nombre}</Link>
-      {abierto && (
-        <span className="perfil-popover" role="tooltip">
-          {!datos && <span>Cargando...</span>}
-          {datos?.error && <span>No se pudo cargar el perfil.</span>}
-          {datos && !datos.error && (
-            <>
-              {datos.foto ? (
-                <img src={datos.foto} alt="" className="popover-foto" />
-              ) : (
-                <span className="popover-foto popover-letra">{nombre.charAt(0).toUpperCase()}</span>
-              )}
-              <strong>{datos.usuario}</strong>
-              <span className="popover-desc">{datos.descripcion || "Sin descripción todavía."}</span>
-              <span className="popover-stat">{datos.partidas?.length || 0} partidas registradas</span>
-            </>
-          )}
-        </span>
-      )}
+      {abierto &&
+        createPortal(
+          <span className="perfil-popover" role="tooltip" style={{ top: posicion.top, left: posicion.left }}>
+            {!datos && <span>Cargando...</span>}
+            {datos?.error && <span>No se pudo cargar el perfil.</span>}
+            {datos && !datos.error && (
+              <>
+                {datos.foto ? (
+                  <img src={datos.foto} alt="" className="popover-foto" />
+                ) : (
+                  <span className="popover-foto popover-letra">{nombre.charAt(0).toUpperCase()}</span>
+                )}
+                <strong>{datos.usuario}</strong>
+                <span className="popover-desc">{datos.descripcion || "Sin descripción todavía."}</span>
+                <span className="popover-stat">{datos.partidas?.length || 0} partidas registradas</span>
+              </>
+            )}
+          </span>,
+          document.body
+        )}
     </span>
   );
 }
