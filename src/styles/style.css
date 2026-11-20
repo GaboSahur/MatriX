@@ -879,3 +879,54 @@ main p a, main a[style*="var(--accent)"] { color: var(--accent-text) !important;
 .nivel-numero { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
 .nivel-estado { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); text-transform: uppercase; }
 @media (max-width: 600px) { .niveles-grilla { grid-template-columns: repeat(3, 1fr); } }
+
+/* ============================================================
+   PULIDO VISUAL: profundidad, degradados e interacción
+   ============================================================ */
+
+/* 1. Portada: degradado suave y título más presente */
+.hero {
+  background: linear-gradient(135deg, var(--bg) 0%, var(--accent-soft) 100%);
+}
+.hero h1 { font-size: clamp(2.2rem, 4.5vw, 3.2rem); letter-spacing: -0.01em; }
+:root[data-tema="oscuro"] .hero,
+html[data-tema="oscuro"] .hero {
+  background: linear-gradient(135deg, #1f2421 0%, #1d3a33 100%);
+}
+
+/* 2. Tarjetas: sombra suave y elevación al pasar el mouse */
+.card, .level-card, .form-card, .tutor-panel, .game-shell {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card:hover, .level-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 14px 30px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+}
+
+/* 3. Botones: borde de acento al pasar el mouse y presión visible */
+.btn, .cuenta-boton, .tab-btn, .pill {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+.btn-primary:hover, .btn-acento:hover { filter: brightness(1.08); }
+.btn:active, .cuenta-boton:active, .tab-btn:active { transform: scale(0.97); }
+.btn-secondary:hover, .btn-ghost:hover, .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 4. Niveles: completados con acento verde, bloqueados más apagados */
+.nivel-item { transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease; }
+.nivel-item:not(.bloqueado):hover { transform: translateY(-2px); }
+.nivel-item.completado {
+  background: var(--success-soft);
+  border-color: var(--success);
+}
+.nivel-item.completado .nivel-numero { color: var(--success); }
+.nivel-item.bloqueado { background: var(--surface-2, var(--bg)); }
+
+/* 5. Espaciado: más aire entre secciones */
+section { padding: 56px 0; }
+.section-head { margin-bottom: 36px; }
+@media (max-width: 600px) {
+  section { padding: 36px 0; }
+  .section-head { margin-bottom: 24px; }
+}
