@@ -996,3 +996,18 @@ table.ranking th, table.ranking td { text-align: left; }
   /* Pie de página en columna */
   .site-footer .container { flex-direction: column; gap: 4px; text-align: center; }
 }
+
+/* Corrección de encabezado en celular */
+@media (max-width: 600px) {
+  .site-header .brand-tag { display: none !important; }
+  .site-header .ui-controles { display: none !important; }
+  .site-header .container.nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .site-header .brand { flex-direction: row; align-items: center; min-width: 0; }
+  .nav-toggle { flex-shrink: 0; }
+}
