@@ -148,6 +148,7 @@ function PerfilPropio() {
   const [fotoNueva, setFotoNueva] = useState(undefined); // undefined no cambia; "" quitar; data URL nueva
   const [partidas, setPartidas] = useState([]);
   const [racha, setRacha] = useState(null);
+  const [progreso, setProgreso] = useState(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -166,6 +167,11 @@ function PerfilPropio() {
     fetch(`${API_URL}/api/jugadores/${encodeURIComponent(sesion.usuario)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setPartidas(d.partidas))
+      .catch(() => {});
+
+    fetch(`${API_URL}/api/progreso`, { headers: cabeceraAuth(sesion.token) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setProgreso(d))
       .catch(() => {});
 
     fetch(`${API_URL}/api/racha`, { headers: cabeceraAuth(sesion.token) })
@@ -259,6 +265,16 @@ function PerfilPropio() {
               {guardando ? "Guardando..." : "Guardar cambios"}
             </button>
           </form>
+
+          <h3 style={{ marginTop: 28 }}>Mi progreso</h3>
+          {progreso && (
+            <>
+              <p style={{ textAlign: "center", color: "var(--ink-soft)" }}>{progreso.completados} de {progreso.total} niveles completados</p>
+              <div className="progreso-barra" role="progressbar" aria-valuenow={progreso.completados} aria-valuemin={0} aria-valuemax={progreso.total}>
+                <div className="progreso-relleno" style={{ width: `${(progreso.completados / progreso.total) * 100}%` }} />
+              </div>
+            </>
+          )}
 
           <h3 style={{ marginTop: 28 }}>Mi racha</h3>
           {racha && (

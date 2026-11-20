@@ -19,9 +19,17 @@ const DATOS_CURIOSOS = [
 
 const aleatorioEntre = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
+// Interpreta el parámetro: "suma" (práctica) o "suma-3" (nivel de progresión)
+function interpretarNivel(pedido) {
+  const coincide = /^(suma|resta|multiplicacion|division|mixto)-([1-5])$/.exec(pedido || "");
+  if (coincide) return { base: coincide[1], numero: Number(coincide[2]), esNivel: true };
+  const base = CONTENT_LIBRARY[pedido] ? pedido : "suma";
+  return { base, numero: null, esNivel: false };
+}
+
 // Dificultad adaptativa: sube con 3 aciertos seguidos, baja con 2 errores seguidos
-function crearMotor() {
-  return { nivelDificultad: 2, rachaAciertos: 0, rachaErrores: 0 };
+function crearMotor(inicio) {
+  return { nivelDificultad: inicio, rachaAciertos: 0, rachaErrores: 0 };
 }
 
 function registrarResultado(motor, esCorrecto) {
@@ -42,8 +50,8 @@ function registrarResultado(motor, esCorrecto) {
   }
 }
 
-function generarEjercicio(nivelKey, motor) {
-  const operacion = nivelKey === "mixto" ? OPERACIONES[aleatorioEntre(0, 3)] : nivelKey;
+function generarEjercicio(base, motor) {
+  const operacion = base === "mixto" ? OPERACIONES[aleatorioEntre(0, 3)] : base;
   const config = CONTENT_LIBRARY[operacion];
   const factor = 1 + (motor.nivelDificultad - 1) * 0.6;
   const min = config.min;
@@ -80,7 +88,6 @@ function leerEnVoz(texto) {
   if (!("speechSynthesis" in window)) return;
   const frase = texto.replace(/[+\-−×÷]/g, (s) => ` ${SIMBOLOS_VOZ[s] || s} `);
   speechSynthesis.cancel();
-  // Chrome descarta una lectura pedida justo después de cancelar: damos un respiro
   setTimeout(() => {
     const voz = new SpeechSynthesisUtterance(frase);
     const espanol = speechSynthesis.getVoices().find((v) => v.lang.startsWith("es"));
@@ -91,24 +98,31 @@ function leerEnVoz(texto) {
   }, 80);
 }
 
+// Devuelve la respuesta del servidor (incluye si se completó un nivel) o null si falla
 async function guardarPartida(datos) {
   try {
     const sesion = leerSesion();
-    await fetch(`${API_URL}/api/partidas`, {
+    const r = await fetch(`${API_URL}/api/partidas`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...cabeceraAuth(sesion?.token) },
       body: JSON.stringify(datos),
     });
-  } catch (error) {
-    console.warn("No se pudo guardar la partida:", error);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
   }
 }
 
 export default function Jugar() {
   const [params] = useSearchParams();
   const pedido = params.get("nivel");
-  const nivelKey = CONTENT_LIBRARY[pedido] ? pedido : "suma";
-  const titulo = CONTENT_LIBRARY[nivelKey].titulo;
+  const { base, numero, esNivel } = interpretarNivel(pedido);
+  const logueado = Boolean(leerSesion());
+  // Solo las cuentas juegan la progresión; los invitados practican
+  const nivelId = esNivel && logueado ? pedido : null;
+  const titulo = nivelId ? `${CONTENT_LIBRARY[base].titulo} ${numero}` : CONTENT_LIBRARY[base].titulo;
+  const dificultadInicial = nivelId ? numero : 2;
 
   const [fase, setFase] = useState("jugando"); // jugando | fin
   const [tiempo, setTiempo] = useState(DURACION);
@@ -116,12 +130,12 @@ export default function Jugar() {
   const [problema, setProblema] = useState(null);
   const [respuesta, setRespuesta] = useState("");
   const [feedback, setFeedback] = useState({ texto: "", tipo: "" });
-  const [dificultad, setDificultad] = useState(2);
+  const [dificultad, setDificultad] = useState(dificultadInicial);
   const [vozActivada, setVozActivada] = useState(false);
   const [datoCurioso, setDatoCurioso] = useState("");
+  const [aviso, setAviso] = useState("");
 
-  // Valores que cambian seguido: van en refs para que los temporizadores no vean datos viejos
-  const motor = useRef(crearMotor());
+  const motor = useRef(crearMotor(dificultadInicial));
   const partida = useRef(null);
   const intervalo = useRef(null);
   const siguiente = useRef(null);
@@ -138,7 +152,7 @@ export default function Jugar() {
     inputRef.current?.focus();
   }
 
-  function finalizar() {
+  async function finalizar() {
     const p = partida.current;
     if (!p || !p.jugando) return;
     p.jugando = false;
@@ -150,25 +164,37 @@ export default function Jugar() {
     const indice = Math.abs(Number(p.puntaje || p.correctas) || 0) % DATOS_CURIOSOS.length;
     setDatoCurioso(`Sabías que… ${DATOS_CURIOSOS[indice]}`);
 
-    guardarPartida({
-      nivel: p.nivel,
-      puntaje: p.puntaje,
-      correctas: p.correctas,
-      incorrectas: p.incorrectas,
-    });
+    // Solo las cuentas guardan; los invitados practican sin ranking
+    if (!logueado) {
+      setAviso("Practicaste sin cuenta, así que tu partida no entra al ranking. Ingresá para jugar la progresión y guardar tus puntajes.");
+      return;
+    }
+
+    const datos = { nivel: p.nivel, puntaje: p.puntaje, correctas: p.correctas, incorrectas: p.incorrectas };
+    if (p.nivelId) datos.nivelId = p.nivelId;
+    const resultado = await guardarPartida(datos);
+
+    if (!resultado) {
+      setAviso("No se pudo guardar la partida. Revisá tu conexión.");
+    } else if (resultado.nivelCompletado) {
+      setAviso(`¡Completaste ${titulo}! 🎉 Ya podés pasar al siguiente nivel.`);
+    } else if (p.nivelId) {
+      setAviso("Partida guardada. Para completar el nivel necesitás al menos 70% de aciertos y 5 respuestas.");
+    }
   }
 
   function iniciar() {
     clearInterval(intervalo.current);
     clearTimeout(siguiente.current);
-    motor.current = crearMotor();
-    partida.current = { nivel: nivelKey, puntaje: 0, correctas: 0, incorrectas: 0, racha: 0, tiempo: DURACION, jugando: true, problema: null };
+    motor.current = crearMotor(dificultadInicial);
+    partida.current = { nivel: base, nivelId, puntaje: 0, correctas: 0, incorrectas: 0, racha: 0, tiempo: DURACION, jugando: true, problema: null };
 
     setFase("jugando");
     setTiempo(DURACION);
     setStats({ puntaje: 0, correctas: 0, incorrectas: 0, racha: 0 });
     setDificultad(motor.current.nivelDificultad);
     setDatoCurioso("");
+    setAviso("");
     nuevoProblema();
 
     intervalo.current = setInterval(() => {
@@ -221,10 +247,10 @@ export default function Jugar() {
     if (!nuevo && "speechSynthesis" in window) speechSynthesis.cancel();
   }
 
-  // Empieza una partida nueva cada vez que cambia el nivel
+  // Empieza una partida nueva cada vez que cambia el nivel pedido
   useEffect(() => {
     iniciar();
-  }, [nivelKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pedido]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Al salir de la página, se detiene todo
   useEffect(() => {
@@ -242,6 +268,11 @@ export default function Jugar() {
         <div className="section-head center" style={{ margin: "0 auto 28px", textAlign: "center" }}>
           <span className="eyebrow">{titulo}</span>
           <h2>¡A resolver!</h2>
+          {!logueado && (
+            <p style={{ color: "var(--ink-soft)" }}>
+              Modo práctica · <Link to="/ingresar" className="enlace">ingresá</Link> para la progresión y el ranking.
+            </p>
+          )}
         </div>
 
         {fase === "jugando" ? (
@@ -250,7 +281,7 @@ export default function Jugar() {
               <span className="pill timer">⏱ {tiempo}s</span>
               <span className="pill">⭐ {stats.puntaje} pts</span>
               <span className="pill streak">🔥 {stats.racha}</span>
-              <span className="pill">Nivel {dificultad}/5</span>
+              <span className="pill">Dificultad {dificultad}/5</span>
               <button type="button" className="pill" aria-pressed={vozActivada} onClick={alternarVoz}>
                 {vozActivada ? "🔊 Voz" : "🔇 Voz"}
               </button>
@@ -281,6 +312,7 @@ export default function Jugar() {
             <span className="eyebrow">Partida terminada</span>
             <p className="score-big">{stats.puntaje} pts</p>
             <p>{stats.correctas} correctas · {stats.incorrectas} incorrectas</p>
+            {aviso && <p className="alert alert-success show visible" role="status" style={{ maxWidth: 520, margin: "16px auto" }}>{aviso}</p>}
             {datoCurioso && (
               <p className="dato-curioso" style={{ fontStyle: "italic", maxWidth: 520, margin: "16px auto" }}>
                 {datoCurioso}
