@@ -1061,3 +1061,14 @@ table.ranking th, table.ranking td { text-align: left; }
   html.menu-compacto .brand-name { font-size: 1.15rem; }
   html.menu-compacto .brand-tag { display: none; }
 }
+
+/* Con el menú abierto en celular, la página no se desplaza por detrás */
+@media (max-width: 860px) {
+  html:has(.nav-links.open),
+  body:has(.nav-links.open) {
+    overflow: hidden;
+    height: 100%;
+    touch-action: none;
+  }
+  .site-header .nav-links.open { touch-action: pan-y; }
+}
