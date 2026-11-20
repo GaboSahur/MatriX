@@ -1049,3 +1049,15 @@ table.ranking th, table.ranking td { text-align: left; }
   body:has(.nav-links.open) .tutor-flotante,
   body:has(.nav-links.open) .tutor-panel { display: none !important; }
 }
+
+/* Correcciones finales de celular: encabezado y menú sin modo compacto */
+@media (max-width: 860px) {
+  .site-header .container.nav > * { width: auto !important; max-width: none !important; flex: 0 0 auto; }
+  .site-header .container.nav > .brand { flex: 1 1 auto; min-width: 0; }
+  .site-header .nav-toggle { margin-left: auto; }
+
+  html.menu-compacto .nav-links a { font-size: 1rem !important; text-align: left !important; padding: 14px 16px !important; }
+  html.menu-compacto .nav-links a::before { content: none !important; }
+  html.menu-compacto .brand-name { font-size: 1.15rem; }
+  html.menu-compacto .brand-tag { display: none; }
+}
