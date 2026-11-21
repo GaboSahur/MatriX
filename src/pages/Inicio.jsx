@@ -31,7 +31,7 @@ export default function Inicio() {
             <h2>Practicá sin presión</h2>
             <p>Estas partidas son solo para practicar y no entran al ranking.</p>
           </div>
-          <div className="grid-3">
+          <div className="grid-2 practicas-grilla">
             {PRACTICAS.map((p) => (
               <div className="level-card" key={p.id}>
                 <div className="icon mono">{p.simbolo}</div>

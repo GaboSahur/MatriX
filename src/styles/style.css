@@ -1482,3 +1482,6 @@ html.menu-compacto .nav-links a:hover::before { color: var(--accent); }
   .nivel-item, .site-header .nav-links li { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* Prácticas en el inicio: 2x2 */
+.practicas-grilla { max-width: 760px; margin: 0 auto; gap: 20px; }
