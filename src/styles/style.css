@@ -1412,3 +1412,33 @@ html.menu-compacto .nav-links a::before {
 }
 html.menu-compacto .nav-links a.active::before,
 html.menu-compacto .nav-links a:hover::before { color: var(--accent); }
+
+/* Menú en celular: animación al abrir y al cerrar */
+@keyframes menuEntrada {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes menuSalida {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+@keyframes menuItem {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (max-width: 860px) {
+  .site-header .nav-links.open { animation: menuEntrada 0.25s ease both; }
+  .site-header .nav-links.open.cerrando { animation: menuSalida 0.2s ease both; }
+  .site-header .nav-links.open li { animation: menuItem 0.3s ease both; }
+  .site-header .nav-links.open li:nth-child(2) { animation-delay: 0.04s; }
+  .site-header .nav-links.open li:nth-child(3) { animation-delay: 0.08s; }
+  .site-header .nav-links.open li:nth-child(4) { animation-delay: 0.12s; }
+  .site-header .nav-links.open li:nth-child(5) { animation-delay: 0.16s; }
+  .site-header .nav-links.open li:nth-child(6) { animation-delay: 0.2s; }
+  .site-header .nav-links.open ~ .ui-controles { animation: menuEntrada 0.3s ease both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .nav-links.open,
+  .site-header .nav-links.open li,
+  .site-header .nav-links.open ~ .ui-controles { animation: none; }
+}

@@ -28,6 +28,22 @@ function guardarPrefsUI(cambios) {
 
 export default function Layout({ children }) {
   const [abierto, setAbierto] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
+
+  // Cierra el menú con animación: primero se anima la salida y después se oculta
+  function cerrarMenu() {
+    if (!abierto || cerrando) return;
+    setCerrando(true);
+    setTimeout(() => {
+      setAbierto(false);
+      setCerrando(false);
+    }, 200);
+  }
+
+  function alternarMenu() {
+    if (abierto) cerrarMenu();
+    else setAbierto(true);
+  }
   const [oscuro, setOscuro] = useState(() => leerPrefsUI().tema === "oscuro");
   const [compacto, setCompacto] = useState(() => leerPrefsUI().menuCompacto === true);
 
@@ -53,7 +69,7 @@ export default function Layout({ children }) {
     <>
       <header className="site-header">
         <div className="container nav">
-          <NavLink to="/" className="brand" onClick={() => setAbierto(false)}>
+          <NavLink to="/" className="brand" onClick={cerrarMenu}>
             <h1 className="brand-name">MatriX</h1>
             <span className="brand-tag">Práctica de matemática</span>
           </NavLink>
@@ -61,17 +77,17 @@ export default function Layout({ children }) {
             className="nav-toggle"
             aria-expanded={abierto}
             aria-controls="menu-principal"
-            onClick={() => setAbierto((v) => !v)}
+            onClick={alternarMenu}
           >
             ☰ Menú
           </button>
-          <ul className={`nav-links ${abierto ? "open" : ""}`} id="menu-principal">
+          <ul className={`nav-links ${abierto ? "open" : ""} ${cerrando ? "cerrando" : ""}`} id="menu-principal">
             <li className="menu-cerrar-item">
-              <button type="button" className="menu-cerrar" onClick={() => setAbierto(false)}>✕ Cerrar menú</button>
+              <button type="button" className="menu-cerrar" onClick={cerrarMenu}>✕ Cerrar menú</button>
             </li>
             {LINKS.map((l) => (
               <li key={l.to}>
-                <NavLink to={l.to} end={l.to === "/"} data-corto={l.label.charAt(0)} onClick={() => setAbierto(false)}>
+                <NavLink to={l.to} end={l.to === "/"} data-corto={l.label.charAt(0)} onClick={cerrarMenu}>
                   {l.label}
                 </NavLink>
               </li>
