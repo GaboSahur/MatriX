@@ -1387,3 +1387,28 @@ main > section:nth-of-type(3) { animation-delay: 0.16s; }
   main > section { animation: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Menú achicado: que se vea la letra de cada apartado (anula la barra de acento) */
+html.menu-compacto .nav-links a {
+  font-size: 0;
+  text-align: center;
+  padding: 12px 0;
+  transform: none;
+}
+html.menu-compacto .nav-links a:hover { transform: none; }
+html.menu-compacto .nav-links a::before {
+  content: attr(data-corto) !important;
+  position: static;
+  width: auto;
+  height: auto;
+  top: auto;
+  bottom: auto;
+  transform: none;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: inherit;
+}
+html.menu-compacto .nav-links a.active::before,
+html.menu-compacto .nav-links a:hover::before { color: var(--accent); }
