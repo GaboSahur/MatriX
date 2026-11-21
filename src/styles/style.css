@@ -1326,3 +1326,64 @@ html[data-tema="oscuro"] body[data-page="inicio"] .level-card:hover .icon { colo
 .popover-letra { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 1.6rem; font-weight: 700; }
 .popover-desc { color: var(--ink-soft); font-size: 0.8rem; }
 .popover-stat { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-soft); text-transform: uppercase; }
+
+/* ============================================================
+   MOVIMIENTO SUTIL: menú, botones y entrada de secciones
+   ============================================================ */
+
+/* Entrada suave de cada sección al cargar */
+@keyframes entrada {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+main > section { animation: entrada 0.45s ease both; }
+main > section:nth-of-type(2) { animation-delay: 0.08s; }
+main > section:nth-of-type(3) { animation-delay: 0.16s; }
+
+/* Menú: el enlace se corre un poco y muestra una barra de acento */
+.nav-links a {
+  position: relative;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+.nav-links a:hover { transform: translateX(4px); }
+.nav-links a::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+.nav-links a:hover::before,
+.nav-links a.active::before { transform: scaleY(1); }
+
+/* Botones: se levantan apenas y responden al toque */
+.btn, .cuenta-boton, .ui-toggle, .tab-btn, .pill {
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.btn:hover, .cuenta-boton:hover, .ui-toggle:hover { transform: translateY(-1px); }
+.btn-primary:hover { box-shadow: 0 6px 16px rgba(33, 104, 105, 0.22); }
+.btn:active, .cuenta-boton:active, .ui-toggle:active, .tab-btn:active { transform: translateY(0) scale(0.98); }
+
+/* Pestañas y píldoras: cambio de color suave */
+.tab-btn:hover { color: var(--accent); }
+
+/* Tarjetas: elevación leve al pasar el mouse */
+.level-card, .card, .tarjeta {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.level-card:hover, .card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08); }
+
+/* Foto y nombre de cuenta: un poco de vida al pasar el mouse */
+.cuenta-perfil { transition: transform 0.2s ease, border-color 0.2s ease; }
+.cuenta-perfil:hover { transform: translateY(-1px); }
+
+/* Respetar a quien prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  main > section { animation: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
