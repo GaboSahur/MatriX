@@ -1442,3 +1442,43 @@ html.menu-compacto .nav-links a:hover::before { color: var(--accent); }
   .site-header .nav-links.open li,
   .site-header .nav-links.open ~ .ui-controles { animation: none; }
 }
+
+/* ============================================================
+   COMPUTADORA: movimiento fluido en el menú lateral
+   ============================================================ */
+@keyframes menuLateral {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (min-width: 861px) {
+  html { scroll-behavior: smooth; }
+  .site-header .nav-links li { animation: menuLateral 0.4s ease both; }
+  .site-header .nav-links li:nth-child(1) { animation-delay: 0.05s; }
+  .site-header .nav-links li:nth-child(2) { animation-delay: 0.1s; }
+  .site-header .nav-links li:nth-child(3) { animation-delay: 0.15s; }
+  .site-header .nav-links li:nth-child(4) { animation-delay: 0.2s; }
+  .site-header .nav-links li:nth-child(5) { animation-delay: 0.25s; }
+  .site-header .nav-links a {
+    transition: color 0.25s ease, background-color 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .site-header .nav-links a:hover { transform: translateX(6px); }
+}
+
+/* ============================================================
+   NIVELES: aparecen de derecha a izquierda, uno tras otro
+   ============================================================ */
+@keyframes nivelDesdeDerecha {
+  from { opacity: 0; transform: translateX(48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.nivel-item { animation: nivelDesdeDerecha 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.niveles-grilla .nivel-item:nth-child(5n+1) { animation-delay: 0.00s; }
+.niveles-grilla .nivel-item:nth-child(5n+2) { animation-delay: 0.07s; }
+.niveles-grilla .nivel-item:nth-child(5n+3) { animation-delay: 0.14s; }
+.niveles-grilla .nivel-item:nth-child(5n+4) { animation-delay: 0.21s; }
+.niveles-grilla .nivel-item:nth-child(5n+5) { animation-delay: 0.28s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nivel-item, .site-header .nav-links li { animation: none; }
+  html { scroll-behavior: auto; }
+}
